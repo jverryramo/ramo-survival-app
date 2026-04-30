@@ -2,7 +2,8 @@
 // Écran Session — Création et sélection de session
 // ============================================================
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Alert,
   FlatList,
@@ -100,6 +101,13 @@ export default function SessionScreen() {
   const [operator, setOperator] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
+  // Charger le dernier opérateur mémorisé
+  useEffect(() => {
+    AsyncStorage.getItem("last_operator").then((val) => {
+      if (val) setOperator(val);
+    });
+  }, []);
+
   async function handleStart() {
     if (!projectId.trim()) {
       Alert.alert("Champ requis", "Saisis un numéro de projet.");
@@ -111,9 +119,14 @@ export default function SessionScreen() {
     }
     setIsCreating(true);
     try {
-      await createSession(projectId.trim(), date, operator.trim());
+      const trimmedOperator = operator.trim();
+      await createSession(projectId.trim(), date, trimmedOperator);
+      // Mémoriser l'opérateur pour la prochaine session
+      if (trimmedOperator) {
+        await AsyncStorage.setItem("last_operator", trimmedOperator);
+      }
       setProjectId("");
-      setOperator("");
+      // Garder l'opérateur pré-rempli pour la prochaine session
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }

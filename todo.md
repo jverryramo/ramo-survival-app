@@ -53,3 +53,7 @@
 - [x] Champ Opérateur dans la session (nom de la personne qui fait le comptage)
 - [x] Afficher l'opérateur dans le header de l'écran Comptage
 - [x] Inclure l'opérateur dans l'export XLSX
+
+## Améliorations v1.4
+- [x] Mémoriser le dernier opérateur localement (AsyncStorage) et pré-remplir le champ
+- [x] Écran de verrouillage par mot de passe (ramo26) à l'ouverture de l'app
