@@ -60,3 +60,8 @@
 
 ## Corrections v1.5
 - [x] Corriger l'export XLSX — fonctionne sur iOS/Android natif (pas seulement aperçu web)
+
+## Build & Distribution v1.5
+- [x] Rédiger BUILD.md complet avec guide étape par étape iOS + Android
+- [x] Vérifier eas.json (profils preview et production)
+- [x] Vérifier app.config.ts (ITSAppUsesNonExemptEncryption, bundleId)
