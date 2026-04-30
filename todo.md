@@ -38,3 +38,7 @@
 - [x] Préparer eas.json
 - [x] Vérifier la checklist pré-build
 - [x] Créer DEPLOY.md
+
+## Améliorations v1.1
+- [x] Ajouter un sélecteur de date natif (calendrier) dans l'écran Session
+- [x] Fallback web pour le date picker (champ texte sur web)

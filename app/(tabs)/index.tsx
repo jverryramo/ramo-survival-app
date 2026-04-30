@@ -14,10 +14,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+// Note: TextInput gardé pour le champ numéro de projet
 import { useRouter, type Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { DatePickerField } from "@/components/DatePickerField";
 import { useSession } from "@/lib/session-context";
 import { Session } from "@/lib/types";
 
@@ -174,15 +176,10 @@ export default function SessionScreen() {
                 returnKeyType="done"
               />
 
-              <Text style={styles.label}>Date</Text>
-              <TextInput
-                style={styles.input}
+              <DatePickerField
+                label="Date"
                 value={date}
-                onChangeText={setDate}
-                placeholder="AAAA-MM-JJ"
-                placeholderTextColor="#9BA1A6"
-                keyboardType="numbers-and-punctuation"
-                returnKeyType="done"
+                onChange={setDate}
               />
 
               <TouchableOpacity
