@@ -1,43 +1,35 @@
 # Guide de build — Ramo Survival App
 
-Ce guide te permet de construire l'app iOS et Android depuis ton terminal. EAS Build compile tout dans le cloud Expo — pas besoin de Xcode ni d'Android Studio.
+EAS Build compile l'app dans le cloud Expo. Pas besoin de Xcode ni d'Android Studio.
 
 ---
 
 ## Prérequis (à faire une seule fois)
 
-### 1. Node.js v18+
-
+**Node.js v18+**
 ```bash
 node --version
 ```
-Si inférieur à v18, télécharge depuis [nodejs.org](https://nodejs.org).
+Si inférieur à v18 : [nodejs.org](https://nodejs.org)
 
-### 2. EAS CLI
-
+**EAS CLI**
 ```bash
 npm install -g eas-cli
 ```
 
-### 3. Compte Expo (gratuit)
+**Compte Expo (gratuit)** : [expo.dev/signup](https://expo.dev/signup)
 
-Crée un compte sur [expo.dev/signup](https://expo.dev/signup) si tu n'en as pas.
-
-### 4. Compte Apple Developer (iOS seulement)
-
-Requis pour les builds iOS. Abonnement annuel de 99 $ USD sur [developer.apple.com](https://developer.apple.com). Le compte doit être **actif**.
+**Compte Apple Developer (iOS seulement)** : 99 $/an sur [developer.apple.com](https://developer.apple.com) — doit être actif.
 
 ---
 
 ## Étape 1 — Télécharger et ouvrir le projet
 
-Télécharge le projet depuis l'interface Manus (menu ⋯ → **Download as ZIP**), décompresse-le, puis dans le Terminal :
+Télécharge le ZIP depuis l'interface Manus (menu **⋯** → **Download as ZIP**), décompresse-le, puis :
 
 ```bash
 cd ~/Downloads/ramo-survival-app
 ```
-
-> Remplace le chemin si tu l'as décompressé ailleurs.
 
 ---
 
@@ -49,19 +41,17 @@ npm install
 
 ---
 
-## Étape 3 — Connexion et initialisation EAS
+## Étape 3 — Connexion Expo
 
 ```bash
 eas login
-eas init
 ```
 
-À `eas login` : entre ton courriel et mot de passe Expo.
-À `eas init` : réponds **Y** pour confirmer le nom du projet.
+Entre ton courriel et mot de passe Expo. Si déjà connecté, réponds **yes** à "Do you want to continue?".
 
 ---
 
-## Étape 4 — Builder l'app
+## Étape 4 — Builder
 
 ### Android (APK)
 
@@ -69,7 +59,7 @@ eas init
 eas build --platform android --profile preview
 ```
 
-Build en 10-15 minutes dans le cloud. À la fin, EAS donne un **lien de téléchargement** pour le `.apk`.
+Build en 10-15 minutes. À la fin, EAS donne un **lien de téléchargement** pour le `.apk`.
 
 **Installation sur Android :**
 1. Envoie le lien par courriel/texto
@@ -105,17 +95,19 @@ Après 5-15 minutes de traitement Apple :
 
 **Installation (membres de l'équipe) :**
 1. Installer l'app **TestFlight** depuis l'App Store
-2. Ouvrir le lien → **Installer** — pas besoin d'enregistrer les appareils
+2. Ouvrir le lien reçu → **Installer**
 
 ---
 
-### iOS — Ad Hoc (distribution rapide, max 100 appareils)
+### iOS — Ad Hoc (max 100 appareils, sans TestFlight)
 
 ```bash
-# Enregistrer chaque iPhone (ouvre un lien à ouvrir dans Safari sur l'iPhone)
 eas device:create
+```
 
-# Builder
+Choisis **Website** → la personne ouvre le lien dans **Safari** sur son iPhone et installe le profil. Ensuite :
+
+```bash
 eas build --platform ios --profile preview
 ```
 
@@ -125,12 +117,10 @@ eas build --platform ios --profile preview
 
 ---
 
-## Mises à jour futures
-
-Pour les mises à jour mineures (sans nouveau code natif) :
+## Mises à jour futures (sans recompiler)
 
 ```bash
-eas update --branch preview --message "Description de la mise à jour"
+eas update --branch preview --message "Description"
 ```
 
 L'app se met à jour au prochain lancement. Pour les mises à jour majeures, refaire un `eas build`.
@@ -142,7 +132,6 @@ L'app se met à jour au prochain lancement. Pour les mises à jour majeures, ref
 | Action | Commande |
 |--------|----------|
 | Connexion Expo | `eas login` |
-| Initialiser EAS | `eas init` |
 | Build Android APK | `eas build --platform android --profile preview` |
 | Build iOS TestFlight | `eas build --platform ios --profile production` |
 | Soumettre iOS | `eas submit --platform ios` |
@@ -154,7 +143,7 @@ L'app se met à jour au prochain lancement. Pour les mises à jour majeures, ref
 
 ## En cas de problème
 
-**Erreur "Unable to resolve module"** → Exécute `git clean -fd` pour supprimer les fichiers fantômes, puis relance le build.
+**"Unexpected arguments: #, Android"** → Les commandes ont été copiées avec le commentaire. Taper uniquement la commande sans le `#` et ce qui suit.
 
 **Build iOS échoue avec erreur de certificat** → Réponds **Y** à "Would you like to automatically manage credentials?".
 

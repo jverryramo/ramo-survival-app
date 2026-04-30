@@ -120,6 +120,11 @@ const config: ExpoConfig = {
       },
     ],
   ],
+  extra: {
+    eas: {
+      projectId: "505589cb-f763-40da-8cbc-f70c2f71d5c3",
+    },
+  },
   experiments: {
     typedRoutes: true,
     reactCompiler: true,
