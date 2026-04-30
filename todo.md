@@ -42,3 +42,7 @@
 ## Améliorations v1.1
 - [x] Ajouter un sélecteur de date natif (calendrier) dans l'écran Session
 - [x] Fallback web pour le date picker (champ texte sur web)
+
+## Améliorations v1.2
+- [x] Graphique de répartition coloré (barres horizontales) dans l'onglet Données
+- [x] Auto-incrément du numéro d'aire après chaque enregistrement dans Comptage

@@ -15,6 +15,7 @@ import {
 import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { SurvivalChart } from "@/components/SurvivalChart";
 import { useSession } from "@/lib/session-context";
 import { FieldRecord, Session, STATE_KEYS, totalCounts, survivalRate } from "@/lib/types";
 import { exportToXLSX } from "@/lib/export";
@@ -367,6 +368,14 @@ export default function DonneesScreen() {
         data={filteredRecords}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          filteredRecords.length > 0 ? (
+            <SurvivalChart
+              records={filteredRecords}
+              title={selectedSessionId ? "Répartition de la session" : "Répartition globale"}
+            />
+          ) : null
+        }
         renderItem={({ item }) => (
           <RecordCard record={item} onDelete={() => handleDeleteRecord(item)} />
         )}

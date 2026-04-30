@@ -250,14 +250,19 @@ export default function ComptageScreen() {
         counts,
         comment
       );
-      // Réinitialiser le formulaire (garder aire et variété)
+      // Réinitialiser le formulaire + auto-incrément de l'aire
+      const nextAire = String(Math.min(parseInt(aire, 10) + 1, 20));
       setCounts(createEmptyCounts());
       setComment("");
       setLengthM("");
+      setAire(nextAire);
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      Alert.alert("✓ Aire enregistrée", `Aire ${aire} — ${total} plants comptés.`);
+      Alert.alert(
+        "✓ Aire enregistrée",
+        `Aire ${aire} — ${total} plants comptés.\n\nProchaine aire : ${nextAire}`
+      );
     } finally {
       setIsSaving(false);
     }
