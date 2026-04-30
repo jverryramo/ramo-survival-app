@@ -33,7 +33,7 @@ interface SessionContextType {
   sessions: Session[];
   activeSession: Session | null;
   setActiveSession: (session: Session | null) => void;
-  createSession: (projectId: string, date?: string) => Promise<Session>;
+  createSession: (projectId: string, date?: string, operator?: string) => Promise<Session>;
   removeSession: (sessionId: string) => Promise<void>;
 
   // Enregistrements
@@ -85,8 +85,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createSession = useCallback(
-    async (projectId: string, date?: string): Promise<Session> => {
-      const session = await saveSession(projectId, date);
+    async (projectId: string, date?: string, operator?: string): Promise<Session> => {
+      const session = await saveSession(projectId, date, operator);
       await refresh();
       setActiveSession(session);
       return session;

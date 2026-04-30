@@ -34,6 +34,7 @@ export async function exportToXLSX(
     return {
       Date: session?.date ?? "",
       Projet: session?.projectId ?? "",
+      Opérateur: session?.operator ?? "",
       Aire: r.aire,
       "Longueur (m)": r.length_m,
       Variété: r.variety,

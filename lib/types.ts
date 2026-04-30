@@ -64,6 +64,7 @@ export interface Session {
   id: string;
   date: string;        // ISO date string "YYYY-MM-DD"
   projectId: string;   // Numéro de projet (ex: "2025-001")
+  operator: string;    // Nom de l'opérateur terrain
   createdAt: string;   // ISO datetime
 }
 

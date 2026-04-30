@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import * as Haptics from "expo-haptics";
+import { useKeepAwake } from "expo-keep-awake";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useSession } from "@/lib/session-context";
@@ -195,6 +196,9 @@ const counterStyles = StyleSheet.create({
 export default function ComptageScreen() {
   const { activeSession, addRecord } = useSession();
 
+  // Garder l'écran allumé pendant le comptage terrain
+  useKeepAwake();
+
   const [aire, setAire] = useState("1");
   const [lengthM, setLengthM] = useState("");
   const [variety, setVariety] = useState("1");
@@ -240,6 +244,22 @@ export default function ComptageScreen() {
       Alert.alert("Comptage vide", "Ajoute au moins un plant avant d'enregistrer.");
       return;
     }
+
+    // Validation longueur — avertissement si vide, bloquant si l'utilisateur annule
+    if (!lengthM.trim()) {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          "Longueur manquante",
+          "La longueur (m) n'est pas remplie.\nVeux-tu enregistrer quand même ?",
+          [
+            { text: "Annuler", style: "cancel", onPress: () => resolve(false) },
+            { text: "Enregistrer quand même", onPress: () => resolve(true) },
+          ]
+        );
+      });
+      if (!confirmed) return;
+    }
+
     setIsSaving(true);
     try {
       await addRecord(
@@ -277,7 +297,10 @@ export default function ComptageScreen() {
         {activeSession ? (
           <>
             <Text style={styles.headerProject}>{activeSession.projectId}</Text>
-            <Text style={styles.headerDate}>{activeSession.date}</Text>
+            <Text style={styles.headerDate}>
+              {activeSession.date}
+              {activeSession.operator ? ` · ${activeSession.operator}` : ""}
+            </Text>
           </>
         ) : (
           <Text style={styles.headerNoSession}>Aucune session active</Text>
@@ -297,13 +320,21 @@ export default function ComptageScreen() {
 
         {/* Longueur */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Longueur (m)</Text>
+          <View style={styles.fieldLabelRow}>
+            <Text style={styles.fieldLabel}>Longueur (m)</Text>
+            {!lengthM.trim() && (
+              <Text style={styles.fieldRequired}>requis</Text>
+            )}
+          </View>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              !lengthM.trim() && styles.inputWarning,
+            ]}
             value={lengthM}
             onChangeText={setLengthM}
             placeholder="Ex. 45.5"
-            placeholderTextColor="#9BA1A6"
+            placeholderTextColor="#F59E0B"
             keyboardType="decimal-pad"
             returnKeyType="done"
           />
@@ -410,6 +441,23 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+  fieldLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  fieldRequired: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#F59E0B",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  inputWarning: {
+    borderColor: "#F59E0B",
+    backgroundColor: "#FFFBF0",
   },
   input: {
     borderWidth: 1.5,

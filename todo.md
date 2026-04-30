@@ -46,3 +46,10 @@
 ## Améliorations v1.2
 - [x] Graphique de répartition coloré (barres horizontales) dans l'onglet Données
 - [x] Auto-incrément du numéro d'aire après chaque enregistrement dans Comptage
+
+## Améliorations v1.3
+- [x] Keep-awake dans l'onglet Comptage (écran reste allumé sur terrain)
+- [x] Validation longueur obligatoire avec avertissement avant enregistrement
+- [x] Champ Opérateur dans la session (nom de la personne qui fait le comptage)
+- [x] Afficher l'opérateur dans le header de l'écran Comptage
+- [x] Inclure l'opérateur dans l'export XLSX

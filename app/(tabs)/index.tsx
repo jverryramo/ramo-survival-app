@@ -68,6 +68,7 @@ function SessionCard({
           </Text>
           <Text style={[styles.sessionDate, isActive && styles.sessionDateActive]}>
             {formatDate(session.date)} · {recordCount} aire{recordCount !== 1 ? "s" : ""}
+            {session.operator ? ` · ${session.operator}` : ""}
           </Text>
         </View>
         {isActive && (
@@ -96,6 +97,7 @@ export default function SessionScreen() {
 
   const [projectId, setProjectId] = useState("");
   const [date, setDate] = useState(todayISO());
+  const [operator, setOperator] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
   async function handleStart() {
@@ -109,8 +111,9 @@ export default function SessionScreen() {
     }
     setIsCreating(true);
     try {
-      await createSession(projectId.trim(), date);
+      await createSession(projectId.trim(), date, operator.trim());
       setProjectId("");
+      setOperator("");
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
@@ -180,6 +183,17 @@ export default function SessionScreen() {
                 label="Date"
                 value={date}
                 onChange={setDate}
+              />
+
+              <Text style={styles.label}>Opérateur</Text>
+              <TextInput
+                style={styles.input}
+                value={operator}
+                onChangeText={setOperator}
+                placeholder="Nom de la personne"
+                placeholderTextColor="#9BA1A6"
+                autoCapitalize="words"
+                returnKeyType="done"
               />
 
               <TouchableOpacity

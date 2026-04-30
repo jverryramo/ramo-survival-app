@@ -35,13 +35,15 @@ export async function loadSessions(): Promise<Session[]> {
 
 export async function saveSession(
   projectId: string,
-  date?: string
+  date?: string,
+  operator?: string
 ): Promise<Session> {
   const sessions = await loadSessions();
   const session: Session = {
     id: generateId(),
     date: date ?? todayISO(),
     projectId: projectId.trim(),
+    operator: (operator ?? "").trim(),
     createdAt: new Date().toISOString(),
   };
   sessions.unshift(session); // plus récent en premier
