@@ -18,6 +18,19 @@ const MAPPING = {
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
+  // Survival App tabs
+  "leaf.fill": "eco",
+  "pencil.and.list.clipboard": "edit-note",
+  "chart.bar.fill": "bar-chart",
+  // Misc
+  "plus": "add",
+  "trash": "delete",
+  "square.and.arrow.up": "ios-share",
+  "checkmark.circle.fill": "check-circle",
+  "xmark.circle.fill": "cancel",
+  "arrow.left": "arrow-back",
+  "calendar": "calendar-today",
+  "folder": "folder",
 } as IconMapping;
 
 /**
