@@ -65,3 +65,7 @@
 - [x] Rédiger BUILD.md complet avec guide étape par étape iOS + Android
 - [x] Vérifier eas.json (profils preview et production)
 - [x] Vérifier app.config.ts (ITSAppUsesNonExemptEncryption, bundleId)
+
+## Ergonomie v1.9
+- [x] Refaire écran Comptage — Étape 1 : formulaire Aire/Longueur/Variété + bouton "Commencer le comptage"
+- [x] Refaire écran Comptage — Étape 2 : mode plein écran terrain, 6 grands boutons, compteurs en gros chiffres, bouton Enregistrer fixe en bas

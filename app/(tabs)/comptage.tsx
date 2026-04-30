@@ -1,12 +1,12 @@
 // ============================================================
-// Écran Comptage — Formulaire de saisie terrain
+// Écran Comptage — Deux étapes : Config → Mode terrain plein écran
 // ============================================================
 
 import React, { useRef, useState } from "react";
 import {
   Alert,
   Animated,
-  FlatList,
+  Dimensions,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,12 +17,15 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useSession } from "@/lib/session-context";
 import { PlantCounts, STATE_KEYS, createEmptyCounts, totalCounts } from "@/lib/types";
 
-// ---- Sélecteur numérique (1-20) ----
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// ---- Sélecteur +/- ----
 
 function NumberPicker({
   label,
@@ -38,20 +41,12 @@ function NumberPicker({
   max?: number;
 }) {
   const num = parseInt(value, 10) || min;
-
-  function decrement() {
-    if (num > min) onChange(String(num - 1));
-  }
-  function increment() {
-    if (num < max) onChange(String(num + 1));
-  }
-
   return (
     <View style={pickerStyles.container}>
       <Text style={pickerStyles.label}>{label}</Text>
       <View style={pickerStyles.row}>
         <TouchableOpacity
-          onPress={decrement}
+          onPress={() => num > min && onChange(String(num - 1))}
           style={[pickerStyles.btn, num <= min && pickerStyles.btnDisabled]}
           disabled={num <= min}
           activeOpacity={0.7}
@@ -60,7 +55,7 @@ function NumberPicker({
         </TouchableOpacity>
         <Text style={pickerStyles.value}>{num}</Text>
         <TouchableOpacity
-          onPress={increment}
+          onPress={() => num < max && onChange(String(num + 1))}
           style={[pickerStyles.btn, num >= max && pickerStyles.btnDisabled]}
           disabled={num >= max}
           activeOpacity={0.7}
@@ -92,31 +87,18 @@ const pickerStyles = StyleSheet.create({
     overflow: "hidden",
   },
   btn: {
-    width: 44,
-    height: 48,
+    width: 52,
+    height: 56,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#003c38",
   },
-  btnDisabled: {
-    backgroundColor: "#D3CBBF",
-  },
-  btnText: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    lineHeight: 26,
-  },
-  value: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1A1A1A",
-  },
+  btnDisabled: { backgroundColor: "#D3CBBF" },
+  btnText: { fontSize: 24, fontWeight: "700", color: "#FFFFFF", lineHeight: 28 },
+  value: { flex: 1, textAlign: "center", fontSize: 22, fontWeight: "700", color: "#1A1A1A" },
 });
 
-// ---- Bouton de comptage ----
+// ---- Bouton de comptage plein écran ----
 
 function CounterButton({
   label,
@@ -138,65 +120,58 @@ function CounterButton({
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   function handlePress() {
-    // Animation flash
     Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.95, duration: 60, useNativeDriver: true }),
-      Animated.timing(scaleAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 0.94, duration: 50, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
     ]).start();
     if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     onPress();
   }
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+    <Animated.View style={[fieldStyles.btnWrapper, { transform: [{ scale: scaleAnim }] }]}>
       <TouchableOpacity
         onPress={handlePress}
         onLongPress={onLongPress}
         style={[
-          counterStyles.btn,
+          fieldStyles.btn,
           { backgroundColor: bg },
-          border ? { borderWidth: 2, borderColor: border } : null,
+          border ? { borderWidth: 2.5, borderColor: border } : null,
         ]}
         activeOpacity={0.9}
         delayLongPress={600}
       >
-        <Text style={[counterStyles.btnLabel, { color: textColor }]}>{label}</Text>
-        <Text style={[counterStyles.btnCount, { color: textColor }]}>{count}</Text>
+        <Text style={[fieldStyles.btnLabel, { color: textColor }]}>{label}</Text>
+        <Text style={[fieldStyles.btnCount, { color: textColor }]}>{count}</Text>
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
-const counterStyles = StyleSheet.create({
+const fieldStyles = StyleSheet.create({
+  btnWrapper: { flex: 1 },
   btn: {
+    flex: 1,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderRadius: 12,
-    marginBottom: 10,
-    minHeight: 80,
+    paddingHorizontal: 24,
+    borderRadius: 0,
   },
-  btnLabel: {
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
-  btnCount: {
-    fontSize: 32,
-    fontWeight: "800",
-  },
+  btnLabel: { fontSize: 20, fontWeight: "700", letterSpacing: 0.2 },
+  btnCount: { fontSize: 52, fontWeight: "900", letterSpacing: -1 },
 });
 
-// ---- Écran principal ----
+// ============================================================
+// Écran principal
+// ============================================================
 
 export default function ComptageScreen() {
   const { activeSession, addRecord } = useSession();
+  const insets = useSafeAreaInsets();
 
-  // Garder l'écran allumé pendant le comptage terrain
   useKeepAwake();
 
   const [aire, setAire] = useState("1");
@@ -205,6 +180,9 @@ export default function ComptageScreen() {
   const [counts, setCounts] = useState<PlantCounts>(createEmptyCounts());
   const [comment, setComment] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Mode : "config" ou "terrain"
+  const [mode, setMode] = useState<"config" | "terrain">("config");
 
   function increment(key: keyof PlantCounts) {
     setCounts((prev) => ({ ...prev, [key]: prev[key] + 1 }));
@@ -216,36 +194,27 @@ export default function ComptageScreen() {
       `Remettre "${STATE_KEYS.find((s) => s.key === key)?.label}" à 0 ?`,
       [
         { text: "Annuler", style: "cancel" },
-        {
-          text: "Réinitialiser",
-          onPress: () => setCounts((prev) => ({ ...prev, [key]: 0 })),
-        },
+        { text: "Réinitialiser", onPress: () => setCounts((prev) => ({ ...prev, [key]: 0 })) },
       ]
     );
   }
 
-  function resetAllCounts() {
-    Alert.alert("Réinitialiser les compteurs", "Remettre tous les compteurs à 0 ?", [
-      { text: "Annuler", style: "cancel" },
-      {
-        text: "Réinitialiser",
-        onPress: () => setCounts(createEmptyCounts()),
-      },
-    ]);
-  }
-
-  async function handleSave() {
+  function handleStartCounting() {
     if (!activeSession) {
       Alert.alert("Aucune session active", "Démarre d'abord une session dans l'onglet Session.");
       return;
     }
+    setCounts(createEmptyCounts());
+    setMode("terrain");
+  }
+
+  async function handleSave() {
     const total = totalCounts(counts);
     if (total === 0) {
       Alert.alert("Comptage vide", "Ajoute au moins un plant avant d'enregistrer.");
       return;
     }
 
-    // Validation longueur — avertissement si vide, bloquant si l'utilisateur annule
     if (!lengthM.trim()) {
       const confirmed = await new Promise<boolean>((resolve) => {
         Alert.alert(
@@ -262,26 +231,20 @@ export default function ComptageScreen() {
 
     setIsSaving(true);
     try {
-      await addRecord(
-        activeSession.id,
-        aire,
-        lengthM,
-        variety,
-        counts,
-        comment
-      );
-      // Réinitialiser le formulaire + auto-incrément de l'aire
+      await addRecord(activeSession!.id, aire, lengthM, variety, counts, comment);
       const nextAire = String(Math.min(parseInt(aire, 10) + 1, 20));
-      setCounts(createEmptyCounts());
-      setComment("");
-      setLengthM("");
-      setAire(nextAire);
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       Alert.alert(
         "✓ Aire enregistrée",
-        `Aire ${aire} — ${total} plants comptés.\n\nProchaine aire : ${nextAire}`
+        `Aire ${aire} — ${total} plants\n\nProchaine aire : ${nextAire}`,
+        [{ text: "OK", onPress: () => {
+          setAire(nextAire);
+          setLengthM("");
+          setComment("");
+          setMode("config");
+        }}]
       );
     } finally {
       setIsSaving(false);
@@ -290,68 +253,49 @@ export default function ComptageScreen() {
 
   const total = totalCounts(counts);
 
-  return (
-    <ScreenContainer containerClassName="bg-primary" safeAreaClassName="bg-background">
-      {/* Header */}
-      <View style={styles.header}>
-        {activeSession ? (
-          <>
-            <Text style={styles.headerProject}>{activeSession.projectId}</Text>
-            <Text style={styles.headerDate}>
-              {activeSession.date}
-              {activeSession.operator ? ` · ${activeSession.operator}` : ""}
+  // ---- Header commun ----
+  const header = (
+    <View style={styles.header}>
+      {activeSession ? (
+        <>
+          <Text style={styles.headerProject}>{activeSession.projectId}</Text>
+          <Text style={styles.headerDate}>
+            {activeSession.date}
+            {activeSession.operator ? ` · ${activeSession.operator}` : ""}
+          </Text>
+        </>
+      ) : (
+        <Text style={styles.headerNoSession}>Aucune session active</Text>
+      )}
+    </View>
+  );
+
+  // ============================================================
+  // MODE TERRAIN — Plein écran, 6 grands boutons
+  // ============================================================
+  if (mode === "terrain") {
+    return (
+      <View style={[styles.terrainContainer, { paddingBottom: insets.bottom }]}>
+        {/* Header terrain compact */}
+        <View style={styles.terrainHeader}>
+          <View style={styles.terrainHeaderLeft}>
+            <Text style={styles.terrainAireLabel}>AIRE</Text>
+            <Text style={styles.terrainAireValue}>{aire}</Text>
+          </View>
+          <View style={styles.terrainHeaderCenter}>
+            <Text style={styles.terrainProjectLabel}>
+              {activeSession?.projectId ?? "—"}
             </Text>
-          </>
-        ) : (
-          <Text style={styles.headerNoSession}>Aucune session active</Text>
-        )}
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Sélecteurs Aire / Variété */}
-        <View style={styles.pickersRow}>
-          <NumberPicker label="Aire" value={aire} onChange={setAire} />
-          <View style={{ width: 12 }} />
-          <NumberPicker label="Variété" value={variety} onChange={setVariety} />
+            <Text style={styles.terrainVarieteLabel}>Variété {variety}</Text>
+          </View>
+          <View style={styles.terrainHeaderRight}>
+            <Text style={styles.terrainTotalLabel}>TOTAL</Text>
+            <Text style={styles.terrainTotalValue}>{total}</Text>
+          </View>
         </View>
 
-        {/* Longueur */}
-        <View style={styles.fieldGroup}>
-          <View style={styles.fieldLabelRow}>
-            <Text style={styles.fieldLabel}>Longueur (m)</Text>
-            {!lengthM.trim() && (
-              <Text style={styles.fieldRequired}>requis</Text>
-            )}
-          </View>
-          <TextInput
-            style={[
-              styles.input,
-              !lengthM.trim() && styles.inputWarning,
-            ]}
-            value={lengthM}
-            onChangeText={setLengthM}
-            placeholder="Ex. 45.5"
-            placeholderTextColor="#F59E0B"
-            keyboardType="decimal-pad"
-            returnKeyType="done"
-          />
-        </View>
-
-        {/* Section comptage */}
-        <View style={styles.countingSection}>
-          <View style={styles.countingHeader}>
-            <Text style={styles.countingTitle}>Comptage</Text>
-            <View style={styles.totalBadge}>
-              <Text style={styles.totalBadgeText}>Total : {total}</Text>
-            </View>
-            <TouchableOpacity onPress={resetAllCounts} style={styles.resetAllBtn}>
-              <Text style={styles.resetAllBtnText}>Tout remettre à 0</Text>
-            </TouchableOpacity>
-          </View>
-
+        {/* 6 boutons plein écran */}
+        <View style={styles.terrainButtons}>
           {STATE_KEYS.map((state) => (
             <CounterButton
               key={state.key}
@@ -364,12 +308,70 @@ export default function ComptageScreen() {
               onLongPress={() => resetCount(state.key)}
             />
           ))}
-          <Text style={styles.longPressHint}>Appui long sur un bouton pour remettre à 0</Text>
+        </View>
+
+        {/* Footer : annuler + enregistrer */}
+        <View style={styles.terrainFooter}>
+          <TouchableOpacity
+            style={styles.terrainCancelBtn}
+            onPress={() => setMode("config")}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.terrainCancelText}>← Retour</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.terrainSaveBtn, isSaving && styles.terrainSaveBtnDisabled]}
+            onPress={handleSave}
+            disabled={isSaving}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.terrainSaveText}>
+              {isSaving ? "Enregistrement…" : "✓ Enregistrer l'aire"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // ============================================================
+  // MODE CONFIG — Formulaire Aire / Longueur / Variété
+  // ============================================================
+  return (
+    <ScreenContainer containerClassName="bg-primary" safeAreaClassName="bg-background">
+      {header}
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Aire + Variété */}
+        <View style={styles.pickersRow}>
+          <NumberPicker label="Aire" value={aire} onChange={setAire} />
+          <View style={{ width: 14 }} />
+          <NumberPicker label="Variété" value={variety} onChange={setVariety} />
+        </View>
+
+        {/* Longueur */}
+        <View style={styles.fieldGroup}>
+          <View style={styles.fieldLabelRow}>
+            <Text style={styles.fieldLabel}>Longueur (m)</Text>
+            {!lengthM.trim() && <Text style={styles.fieldRequired}>requis</Text>}
+          </View>
+          <TextInput
+            style={[styles.input, !lengthM.trim() && styles.inputWarning]}
+            value={lengthM}
+            onChangeText={setLengthM}
+            placeholder="Ex. 45.5"
+            placeholderTextColor="#F59E0B"
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+          />
         </View>
 
         {/* Commentaire */}
         <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>Commentaire</Text>
+          <Text style={styles.fieldLabel}>Commentaire (optionnel)</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={comment}
@@ -382,17 +384,21 @@ export default function ComptageScreen() {
           />
         </View>
 
-        {/* Bouton enregistrer */}
+        {/* Bouton commencer */}
         <TouchableOpacity
-          style={[styles.saveBtn, (isSaving || !activeSession) && styles.saveBtnDisabled]}
-          onPress={handleSave}
-          disabled={isSaving || !activeSession}
+          style={[styles.startBtn, !activeSession && styles.startBtnDisabled]}
+          onPress={handleStartCounting}
+          disabled={!activeSession}
           activeOpacity={0.85}
         >
-          <Text style={styles.saveBtnText}>
-            {isSaving ? "Enregistrement…" : "Enregistrer l'aire"}
-          </Text>
+          <Text style={styles.startBtnText}>Commencer le comptage →</Text>
         </TouchableOpacity>
+
+        {!activeSession && (
+          <Text style={styles.noSessionHint}>
+            Démarre une session dans l'onglet Session pour commencer.
+          </Text>
+        )}
       </ScrollView>
     </ScreenContainer>
   );
@@ -408,130 +414,92 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     alignItems: "center",
   },
-  headerProject: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#DCF21E",
-  },
-  headerDate: {
-    fontSize: 13,
-    color: "#D3CBBF",
-    marginTop: 2,
-  },
-  headerNoSession: {
-    fontSize: 16,
-    color: "#D3CBBF",
-    fontStyle: "italic",
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  pickersRow: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  fieldGroup: {
-    marginBottom: 16,
-  },
+  headerProject: { fontSize: 22, fontWeight: "800", color: "#DCF21E" },
+  headerDate: { fontSize: 13, color: "#D3CBBF", marginTop: 2 },
+  headerNoSession: { fontSize: 16, color: "#D3CBBF", fontStyle: "italic" },
+
+  scrollContent: { padding: 20, paddingBottom: 48 },
+
+  pickersRow: { flexDirection: "row", marginBottom: 20 },
+
+  fieldGroup: { marginBottom: 20 },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6B6560",
-    marginBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontSize: 13, fontWeight: "600", color: "#6B6560",
+    marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5,
   },
   fieldLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 6,
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between", marginBottom: 6,
   },
   fieldRequired: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#F59E0B",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  inputWarning: {
-    borderColor: "#F59E0B",
-    backgroundColor: "#FFFBF0",
+    fontSize: 11, fontWeight: "700", color: "#F59E0B",
+    textTransform: "uppercase", letterSpacing: 0.5,
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: "#D3CBBF",
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    color: "#1A1A1A",
-    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5, borderColor: "#D3CBBF", borderRadius: 10,
+    padding: 16, fontSize: 17, color: "#1A1A1A", backgroundColor: "#FFFFFF",
   },
-  textArea: {
-    minHeight: 80,
-    paddingTop: 12,
+  inputWarning: { borderColor: "#F59E0B", backgroundColor: "#FFFBF0" },
+  textArea: { minHeight: 80, paddingTop: 12 },
+
+  startBtn: {
+    backgroundColor: "#003c38", borderRadius: 16,
+    paddingVertical: 22, alignItems: "center", marginTop: 8,
   },
-  countingSection: {
-    marginBottom: 16,
+  startBtnDisabled: { opacity: 0.4 },
+  startBtnText: { color: "#DCF21E", fontSize: 20, fontWeight: "800", letterSpacing: 0.3 },
+  noSessionHint: {
+    textAlign: "center", color: "#9BA1A6", fontSize: 13,
+    marginTop: 12, fontStyle: "italic",
   },
-  countingHeader: {
+
+  // ---- Mode terrain ----
+  terrainContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  terrainHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    flexWrap: "wrap",
-    gap: 8,
+    backgroundColor: "#003c38",
+    paddingHorizontal: 16,
+    paddingTop: 52,
+    paddingBottom: 12,
   },
-  countingTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#003c38",
+  terrainHeaderLeft: { alignItems: "center", width: 60 },
+  terrainAireLabel: { fontSize: 10, fontWeight: "700", color: "#D3CBBF", letterSpacing: 1 },
+  terrainAireValue: { fontSize: 36, fontWeight: "900", color: "#DCF21E", lineHeight: 40 },
+  terrainHeaderCenter: { flex: 1, alignItems: "center" },
+  terrainProjectLabel: { fontSize: 16, fontWeight: "800", color: "#FFFFFF" },
+  terrainVarieteLabel: { fontSize: 13, color: "#D3CBBF", marginTop: 2 },
+  terrainHeaderRight: { alignItems: "center", width: 60 },
+  terrainTotalLabel: { fontSize: 10, fontWeight: "700", color: "#D3CBBF", letterSpacing: 1 },
+  terrainTotalValue: { fontSize: 36, fontWeight: "900", color: "#FFFFFF", lineHeight: 40 },
+
+  terrainButtons: { flex: 1, gap: 2, paddingHorizontal: 0 },
+
+  terrainFooter: {
+    flexDirection: "row",
+    backgroundColor: "#003c38",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  terrainCancelBtn: {
     flex: 1,
-  },
-  totalBadge: {
-    backgroundColor: "#003c38",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  totalBadgeText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#DCF21E",
-  },
-  resetAllBtn: {
-    borderWidth: 1,
-    borderColor: "#D3CBBF",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  resetAllBtnText: {
-    fontSize: 12,
-    color: "#6B6560",
-    fontWeight: "600",
-  },
-  longPressHint: {
-    fontSize: 11,
-    color: "#9BA1A6",
-    textAlign: "center",
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-  saveBtn: {
-    backgroundColor: "#003c38",
-    borderRadius: 14,
-    paddingVertical: 18,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: 8,
   },
-  saveBtnDisabled: {
-    opacity: 0.5,
+  terrainCancelText: { color: "#D3CBBF", fontSize: 16, fontWeight: "600" },
+  terrainSaveBtn: {
+    flex: 2,
+    backgroundColor: "#DCF21E",
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: "center",
   },
-  saveBtnText: {
-    color: "#DCF21E",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
+  terrainSaveBtnDisabled: { opacity: 0.5 },
+  terrainSaveText: { color: "#003c38", fontSize: 18, fontWeight: "800" },
 });
