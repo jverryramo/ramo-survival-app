@@ -1,33 +1,21 @@
 // ============================================================
 // Ramo Survival App — Export XLSX
+// iOS/Android : partage natif via expo-sharing
+// Web (aperçu) : téléchargement direct via lien <a>
 // ============================================================
 
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
+import { Platform } from "react-native";
 import * as XLSX from "xlsx";
 import { Session, FieldRecord, totalCounts, survivalRate } from "./types";
 
-export async function exportToXLSX(
-  records: FieldRecord[],
-  sessions: Session[],
-  projectId?: string
-): Promise<void> {
-  if (records.length === 0) {
-    throw new Error("Aucune donnée à exporter.");
-  }
+// ---- Construction des lignes ----
 
-  const isAvailable = await Sharing.isAvailableAsync();
-  if (!isAvailable) {
-    throw new Error("Le partage de fichiers n'est pas disponible sur cet appareil.");
-  }
-
-  // Construire un index des sessions pour accès rapide
+function buildRows(records: FieldRecord[], sessions: Session[]) {
   const sessionMap = new Map<string, Session>(
     sessions.map((s) => [s.id, s])
   );
 
-  // Construire les lignes du tableau
-  const rows = records.map((r) => {
+  return records.map((r) => {
     const session = sessionMap.get(r.sessionId);
     const total = totalCounts(r.counts);
     const rate = survivalRate(r.counts);
@@ -49,32 +37,103 @@ export async function exportToXLSX(
       Commentaire: r.comment,
     };
   });
+}
 
-  // Générer le classeur XLSX
+function buildWorkbook(rows: ReturnType<typeof buildRows>) {
   const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Données");
+  return workbook;
+}
+
+function buildFilename(projectId?: string): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return projectId
+    ? `survival_${projectId.replace(/[^a-zA-Z0-9-_]/g, "_")}_${today}.xlsx`
+    : `survival_export_${today}.xlsx`;
+}
+
+// ---- Export web (fallback) ----
+
+async function exportWeb(
+  records: FieldRecord[],
+  sessions: Session[],
+  projectId?: string
+): Promise<void> {
+  const rows = buildRows(records, sessions);
+  const workbook = buildWorkbook(rows);
+  const filename = buildFilename(projectId);
+
+  // Générer un ArrayBuffer et créer un Blob
+  const wbout = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+  const blob = new Blob([wbout], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  // Créer un lien de téléchargement temporaire
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ---- Export natif iOS/Android ----
+
+async function exportNative(
+  records: FieldRecord[],
+  sessions: Session[],
+  projectId?: string
+): Promise<void> {
+  // Import dynamique pour éviter les erreurs sur web
+  const [FileSystem, Sharing] = await Promise.all([
+    import("expo-file-system/legacy"),
+    import("expo-sharing"),
+  ]);
+
+  const isAvailable = await Sharing.isAvailableAsync();
+  if (!isAvailable) {
+    throw new Error("Le partage de fichiers n'est pas disponible sur cet appareil.");
+  }
+
+  const rows = buildRows(records, sessions);
+  const workbook = buildWorkbook(rows);
+  const filename = buildFilename(projectId);
 
   // Encoder en base64
   const base64 = XLSX.write(workbook, { type: "base64", bookType: "xlsx" });
 
-  // Nommer le fichier
-  const today = new Date().toISOString().slice(0, 10);
-  const filename = projectId
-    ? `survival_${projectId}_${today}.xlsx`
-    : `survival_export_${today}.xlsx`;
-
-  // Écrire dans le système de fichiers temporaire
+  // Écrire dans le répertoire de documents (persistant)
   const fileUri = `${FileSystem.documentDirectory}${filename}`;
   await FileSystem.writeAsStringAsync(fileUri, base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
-  // Partager via le système natif
+  // Ouvrir la feuille de partage native
   await Sharing.shareAsync(fileUri, {
-    mimeType:
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    dialogTitle: "Exporter les données",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    dialogTitle: "Exporter les données Survival",
     UTI: "com.microsoft.excel.xlsx",
   });
+}
+
+// ---- Point d'entrée principal ----
+
+export async function exportToXLSX(
+  records: FieldRecord[],
+  sessions: Session[],
+  projectId?: string
+): Promise<void> {
+  if (records.length === 0) {
+    throw new Error("Aucune donnée à exporter.");
+  }
+
+  if (Platform.OS === "web") {
+    await exportWeb(records, sessions, projectId);
+  } else {
+    await exportNative(records, sessions, projectId);
+  }
 }

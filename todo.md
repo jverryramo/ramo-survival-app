@@ -57,3 +57,6 @@
 ## Améliorations v1.4
 - [x] Mémoriser le dernier opérateur localement (AsyncStorage) et pré-remplir le champ
 - [x] Écran de verrouillage par mot de passe (ramo26) à l'ouverture de l'app
+
+## Corrections v1.5
+- [x] Corriger l'export XLSX — fonctionne sur iOS/Android natif (pas seulement aperçu web)
