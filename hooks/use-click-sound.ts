@@ -6,35 +6,30 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Platform } from "react-native";
 
-// Type minimal pour le player audio
-interface AudioPlayerLike {
-  seekTo: (position: number) => void;
-  play: () => void;
-  release: () => void;
-}
+// Asset source déclaré au top level (Metro le résout correctement)
+const CLICK_SOUND_SOURCE = Platform.OS !== "web"
+  ? require("@/assets/sounds/click.wav")
+  : null;
 
 export function useClickSound() {
-  const playerRef = useRef<AudioPlayerLike | null>(null);
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
-    if (Platform.OS === "web") return;
+    if (Platform.OS === "web" || !CLICK_SOUND_SOURCE) return;
 
-    // Import dynamique pour éviter le crash sur web
     let cancelled = false;
-    (async () => {
+
+    // Import expo-audio dynamiquement pour éviter le crash sur web
+    const init = async () => {
       try {
-        // Dynamic import to avoid crash on web
-        // @ts-ignore - expo-audio may not have types in dev
-        const audioModule = await import(/* webpackIgnore: true */ "expo-audio");
+        const { createAudioPlayer } = require("expo-audio");
         if (cancelled) return;
-        const player = audioModule.createAudioPlayer(
-          require("@/assets/sounds/click.wav")
-        );
-        playerRef.current = player as unknown as AudioPlayerLike;
+        playerRef.current = createAudioPlayer(CLICK_SOUND_SOURCE);
       } catch (_) {
         // Silently fail if expo-audio is not available
       }
-    })();
+    };
+    init();
 
     return () => {
       cancelled = true;
