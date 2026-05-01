@@ -90,7 +90,7 @@ async function exportNative(
 ): Promise<void> {
   // Import dynamique pour éviter les erreurs sur web
   const [FileSystem, Sharing] = await Promise.all([
-    import("expo-file-system"),
+    import("expo-file-system/legacy"),
     import("expo-sharing"),
   ]);
 
