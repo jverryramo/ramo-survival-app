@@ -22,6 +22,9 @@ jobs:
       - name: Installer les dépendances
         run: npm install
 
+      - name: Nettoyer le cache NativeWind
+        run: find node_modules -path "*react-native-css-interop/.cache" -type d -exec rm -rf {} + 2>/dev/null || true
+
       - name: Installer EAS CLI
         run: npm install -g eas-cli
 
