@@ -22,6 +22,11 @@ jobs:
       - name: Installer les dépendances
         run: npm install
 
+      - name: Supprimer le cache NativeWind (évite l'erreur Metro SHA-1)
+        run: |
+          rm -rf node_modules/react-native-css-interop/.cache || true
+          rm -rf node_modules/nativewind/node_modules/react-native-css-interop/.cache || true
+
       - name: Installer EAS CLI
         run: npm install -g eas-cli
 
