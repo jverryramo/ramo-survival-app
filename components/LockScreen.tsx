@@ -88,7 +88,7 @@ export function LockScreen({ onUnlock }: LockScreenProps) {
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
-            returnKeyType="done"
+            returnKeyType="go"
             onSubmitEditing={handleSubmit}
             autoFocus
           />

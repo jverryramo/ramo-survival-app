@@ -499,6 +499,7 @@ export default function DonneesScreen() {
       )}
 
       <FlatList
+        style={{ flex: 1 }}
         data={filteredRecords}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}

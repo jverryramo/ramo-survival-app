@@ -195,7 +195,7 @@ export default function SessionScreen() {
                 placeholder="Ex. 2025-001"
                 placeholderTextColor="#9BA1A6"
                 autoCapitalize="characters"
-                returnKeyType="done"
+                returnKeyType="go"
               />
 
               <DatePickerField
@@ -212,7 +212,7 @@ export default function SessionScreen() {
                 placeholder="Nom de la personne"
                 placeholderTextColor="#9BA1A6"
                 autoCapitalize="words"
-                returnKeyType="done"
+                returnKeyType="go"
               />
 
               <TouchableOpacity

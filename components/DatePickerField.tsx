@@ -67,7 +67,7 @@ function WebDateField({
         placeholder="AAAA-MM-JJ"
         placeholderTextColor="#9BA1A6"
         keyboardType="numbers-and-punctuation"
-        returnKeyType="done"
+        returnKeyType="go"
       />
     </View>
   );

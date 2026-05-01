@@ -394,7 +394,7 @@ export default function ComptageScreen() {
             placeholder="Ex. 45.5"
             placeholderTextColor="#F59E0B"
             keyboardType="decimal-pad"
-            returnKeyType="done"
+            returnKeyType="go"
           />
         </View>
 
