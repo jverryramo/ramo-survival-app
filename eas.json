@@ -24,6 +24,7 @@
     },
     "production": {
       "distribution": "store",
+      "cache": { "disabled": true },
       "android": {
         "buildType": "app-bundle",
         "credentialsSource": "remote"
