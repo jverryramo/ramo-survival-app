@@ -1,4 +1,4 @@
-name: Expo Go — Publier mise à jour
+name: EAS Build — APK Android + IPA iOS
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  update:
-    name: Publier sur Expo Go
+  build:
+    name: Build iOS + Android
     runs-on: ubuntu-latest
     steps:
       - name: Checkout du code
@@ -22,14 +22,11 @@ jobs:
       - name: Installer les dépendances
         run: npm install
 
-      - name: Nettoyer le cache NativeWind
-        run: find node_modules -path "*react-native-css-interop/.cache" -type d -exec rm -rf {} + 2>/dev/null || true
-
       - name: Installer EAS CLI
         run: npm install -g eas-cli
 
-      - name: Publier la mise à jour Expo Go
+      - name: Build iOS + Android
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EAS_BUILD_NO_EXPO_GO_WARNING: "true"
-        run: eas update --branch main --message "Mise à jour automatique depuis GitHub" --non-interactive
+        run: eas build --platform all --profile production --non-interactive
