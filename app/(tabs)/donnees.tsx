@@ -16,7 +16,7 @@ import {
 import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
-import { SurvivalChart } from "@/components/SurvivalChart";
+
 import { VarietyChart } from "@/components/VarietyChart";
 import { useSession } from "@/lib/session-context";
 import { FieldRecord, Session, STATE_KEYS, totalCounts, survivalRate } from "@/lib/types";
@@ -265,7 +265,7 @@ const filterStyles = StyleSheet.create({
     color: "#6B6560",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    width: 52,
+    width: 62,
     flexShrink: 0,
   },
   chipsContainer: {
@@ -509,18 +509,7 @@ export default function DonneesScreen() {
                 records={filteredRecords}
                 title="Répartition par variété"
               />
-              <SurvivalChart
-                records={filteredRecords}
-                title={
-                  selectedAire
-                    ? `Aire ${selectedAire}`
-                    : selectedVariety
-                    ? `Variété ${selectedVariety}`
-                    : selectedSessionId
-                    ? "Répartition par état"
-                    : "Répartition par état"
-                }
-              />
+
             </View>
           ) : null
         }
@@ -589,7 +578,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 120,
+    paddingBottom: 200,
   },
   emptyText: {
     textAlign: "center",
@@ -600,6 +589,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     marginTop: 8,
+    marginBottom: 60,
     gap: 12,
   },
   exportBtn: {

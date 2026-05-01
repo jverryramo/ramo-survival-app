@@ -59,9 +59,11 @@ export function LockScreen({ onUnlock }: LockScreenProps) {
       >
         {/* Logo / titre */}
         <View style={styles.logoArea}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoEmoji}>🌱</Text>
-          </View>
+          <Image
+            source={require("@/assets/images/icon_new.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
           <Text style={styles.appName}>Survival</Text>
           <Text style={styles.appSubtitle}>Ramo — Comptage de saules</Text>
         </View>
@@ -127,22 +129,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#DCF21E",
-    alignItems: "center",
-    justifyContent: "center",
+  logoImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 18,
     marginBottom: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  logoEmoji: {
-    fontSize: 38,
   },
   appName: {
     fontSize: 32,
