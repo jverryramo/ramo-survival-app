@@ -1,4 +1,4 @@
-name: EAS Build — iOS + Android
+name: Expo Go — Publier mise à jour
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build iOS + Android
+  update:
+    name: Publier sur Expo Go
     runs-on: ubuntu-latest
     steps:
       - name: Checkout du code
@@ -25,8 +25,8 @@ jobs:
       - name: Installer EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build iOS + Android
+      - name: Publier la mise à jour Expo Go
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EAS_BUILD_NO_EXPO_GO_WARNING: "true"
-        run: eas build --platform all --profile production --non-interactive
+        run: eas update --branch main --message "Mise à jour automatique depuis GitHub" --non-interactive
