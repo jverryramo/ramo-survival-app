@@ -10,30 +10,19 @@
       "distribution": "internal",
       "ios": { "simulator": true }
     },
-    "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk",
-        "credentialsSource": "remote",
-        "withoutCredentials": false
-      },
-      "ios": {
-        "buildConfiguration": "Release",
-        "credentialsSource": "remote"
-      }
-    },
     "production": {
-      "distribution": "store",
+      "distribution": "internal",
       "cache": { "disabled": true },
       "android": {
-        "buildType": "app-bundle",
+        "buildType": "apk",
         "credentialsSource": "remote"
       },
       "ios": {
         "buildConfiguration": "Release",
+        "distribution": "internal",
         "credentialsSource": "remote"
       }
     }
   },
-  "submit": { "production": {} }
+  "submit": {}
 }
