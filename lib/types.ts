@@ -22,7 +22,7 @@ export interface StateKey {
 }
 
 export const STATE_KEYS: StateKey[] = [
-  { key: "Vivant", label: "Vivant", bg: "#003c38", text: "#FFFFFF" },
+  { key: "Vivant", label: "Vivant", bg: "#2563EB", text: "#FFFFFF" },
   { key: "Base", label: "Base", bg: "#DCF21E", text: "#000000" },
   { key: "NonDebourre", label: "Non débourré", bg: "#D3CBBF", text: "#000000" },
   { key: "Mort", label: "Mort", bg: "#8A6F48", text: "#FFFFFF" },

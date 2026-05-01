@@ -99,9 +99,9 @@ describe("STATE_KEYS", () => {
     expect(keys).toContain("PlantEchappe");
   });
 
-  it("Vivant a le fond vert forêt Ramo", () => {
+  it("Vivant a le fond bleu vif (distinct du bandeau vert)", () => {
     const vivant = STATE_KEYS.find((s) => s.key === "Vivant");
-    expect(vivant?.bg).toBe("#003c38");
+    expect(vivant?.bg).toBe("#2563EB");
     expect(vivant?.text).toBe("#FFFFFF");
   });
 

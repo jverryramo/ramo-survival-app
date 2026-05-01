@@ -17,6 +17,8 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
+import { useSoundEnabled } from "@/hooks/use-sound";
+import { useClickSound } from "@/hooks/use-click-sound";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/screen-container";
@@ -174,18 +176,26 @@ export default function ComptageScreen() {
 
   useKeepAwake();
 
+  const { soundEnabled, toggleSound } = useSoundEnabled();
+  const { playClick } = useClickSound();
+
   const [aire, setAire] = useState("1");
   const [lengthM, setLengthM] = useState("");
   const [variety, setVariety] = useState("1");
   const [counts, setCounts] = useState<PlantCounts>(createEmptyCounts());
   const [comment, setComment] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false); // feedback post-enregistrement
 
   // Mode : "config" ou "terrain"
   const [mode, setMode] = useState<"config" | "terrain">("config");
 
   function increment(key: keyof PlantCounts) {
     setCounts((prev) => ({ ...prev, [key]: prev[key] + 1 }));
+    // Jouer le son si activé
+    if (soundEnabled) {
+      playClick();
+    }
   }
 
   function resetCount(key: keyof PlantCounts) {
@@ -209,6 +219,9 @@ export default function ComptageScreen() {
   }
 
   async function handleSave() {
+    // Bloquer le double-enregistrement
+    if (isSaving || saved) return;
+
     const total = totalCounts(counts);
     if (total === 0) {
       Alert.alert("Comptage vide", "Ajoute au moins un plant avant d'enregistrer.");
@@ -236,16 +249,15 @@ export default function ComptageScreen() {
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-      Alert.alert(
-        "✓ Aire enregistrée",
-        `Aire ${aire} — ${total} plants\n\nProchaine aire : ${nextAire}`,
-        [{ text: "OK", onPress: () => {
-          setAire(nextAire);
-          setLengthM("");
-          setComment("");
-          setMode("config");
-        }}]
-      );
+      // Afficher le feedback visuel vert pendant 2 secondes avant de passer à l'aire suivante
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        setAire(nextAire);
+        setLengthM("");
+        setComment("");
+        setMode("config");
+      }, 2000);
     } finally {
       setIsSaving(false);
     }
@@ -292,6 +304,13 @@ export default function ComptageScreen() {
             <Text style={styles.terrainTotalLabel}>TOTAL</Text>
             <Text style={styles.terrainTotalValue}>{total}</Text>
           </View>
+          <TouchableOpacity
+            onPress={toggleSound}
+            style={styles.soundToggle}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.soundToggleText}>{soundEnabled ? "🔊" : "🔇"}</Text>
+          </TouchableOpacity>
         </View>
 
         {/* 6 boutons plein écran */}
@@ -310,23 +329,33 @@ export default function ComptageScreen() {
           ))}
         </View>
 
+        {/* Overlay de confirmation post-enregistrement */}
+        {saved && (
+          <View style={styles.savedOverlay}>
+            <Text style={styles.savedIcon}>✓</Text>
+            <Text style={styles.savedTitle}>Aire {aire} enregistrée</Text>
+            <Text style={styles.savedSubtitle}>{total} plants · Passage à l’aire suivante…</Text>
+          </View>
+        )}
+
         {/* Footer : annuler + enregistrer */}
         <View style={styles.terrainFooter}>
           <TouchableOpacity
             style={styles.terrainCancelBtn}
-            onPress={() => setMode("config")}
+            onPress={() => !saved && setMode("config")}
             activeOpacity={0.8}
+            disabled={saved}
           >
             <Text style={styles.terrainCancelText}>← Retour</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.terrainSaveBtn, isSaving && styles.terrainSaveBtnDisabled]}
+            style={[styles.terrainSaveBtn, (isSaving || saved) && styles.terrainSaveBtnDisabled]}
             onPress={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || saved}
             activeOpacity={0.85}
           >
             <Text style={styles.terrainSaveText}>
-              {isSaving ? "Enregistrement…" : "✓ Enregistrer l'aire"}
+              {isSaving ? "Enregistrement…" : saved ? "✓ Enregistré !" : "✓ Enregistrer l'aire"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -502,4 +531,49 @@ const styles = StyleSheet.create({
   },
   terrainSaveBtnDisabled: { opacity: 0.5 },
   terrainSaveText: { color: "#003c38", fontSize: 18, fontWeight: "800" },
+
+  // ---- Overlay confirmation enregistrement ----
+  savedOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 60, 56, 0.93)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 100,
+  },
+  savedIcon: {
+    fontSize: 72,
+    color: "#DCF21E",
+    fontWeight: "900",
+    lineHeight: 80,
+    marginBottom: 16,
+  },
+  savedTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    marginBottom: 10,
+  },
+  savedSubtitle: {
+    fontSize: 16,
+    color: "#D3CBBF",
+    fontWeight: "500",
+  },
+
+  // Toggle son
+  soundToggle: {
+    position: "absolute",
+    right: 16,
+    top: 52,
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  soundToggleText: {
+    fontSize: 20,
+  },
 });

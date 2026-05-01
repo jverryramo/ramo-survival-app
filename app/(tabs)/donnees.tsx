@@ -2,11 +2,12 @@
 // Écran Données — Historique et export XLSX
 // ============================================================
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -16,6 +17,7 @@ import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { SurvivalChart } from "@/components/SurvivalChart";
+import { VarietyChart } from "@/components/VarietyChart";
 import { useSession } from "@/lib/session-context";
 import { FieldRecord, Session, STATE_KEYS, totalCounts, survivalRate } from "@/lib/types";
 import { exportToXLSX } from "@/lib/export";
@@ -24,13 +26,16 @@ import { exportToXLSX } from "@/lib/export";
 
 function RecordCard({
   record,
+  sessions,
   onDelete,
 }: {
   record: FieldRecord;
+  sessions: Session[];
   onDelete: () => void;
 }) {
   const total = totalCounts(record.counts);
   const rate = survivalRate(record.counts);
+  const session = sessions.find((s) => s.id === record.sessionId);
 
   return (
     <View style={cardStyles.container}>
@@ -40,6 +45,7 @@ function RecordCard({
           <Text style={cardStyles.meta}>
             Var. {record.variety}
             {record.length_m ? ` · ${record.length_m} m` : ""}
+            {session ? ` · ${session.projectId}` : ""}
           </Text>
         </View>
         <View style={cardStyles.headerRight}>
@@ -185,56 +191,87 @@ const cardStyles = StyleSheet.create({
   },
 });
 
-// ---- Sélecteur de session ----
+// ---- Barre de filtres générique ----
 
-function SessionFilter({
-  sessions,
-  selectedId,
+function FilterBar({
+  label,
+  options,
+  selected,
   onSelect,
+  highlight,
 }: {
-  sessions: Session[];
-  selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  label: string;
+  options: Array<{ value: string | null; label: string }>;
+  selected: string | null;
+  onSelect: (v: string | null) => void;
+  highlight?: boolean;
 }) {
   return (
-    <View style={filterStyles.container}>
-      <TouchableOpacity
-        onPress={() => onSelect(null)}
-        style={[filterStyles.chip, selectedId === null && filterStyles.chipActive]}
-        activeOpacity={0.7}
+    <View style={[filterStyles.row, highlight && filterStyles.rowHighlight]}>
+      <Text style={[filterStyles.rowLabel, highlight && filterStyles.rowLabelHighlight]}>
+        {label}
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={filterStyles.chipsContainer}
       >
-        <Text style={[filterStyles.chipText, selectedId === null && filterStyles.chipTextActive]}>
-          Toutes
-        </Text>
-      </TouchableOpacity>
-      {sessions.map((s) => (
-        <TouchableOpacity
-          key={s.id}
-          onPress={() => onSelect(s.id)}
-          style={[filterStyles.chip, selectedId === s.id && filterStyles.chipActive]}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[filterStyles.chipText, selectedId === s.id && filterStyles.chipTextActive]}
-          >
-            {s.projectId}
-          </Text>
-        </TouchableOpacity>
-      ))}
+        {options.map((opt) => {
+          const isActive = selected === opt.value;
+          return (
+            <TouchableOpacity
+              key={opt.value ?? "__all__"}
+              onPress={() => onSelect(opt.value)}
+              style={[
+                filterStyles.chip,
+                highlight && filterStyles.chipHighlight,
+                isActive && (highlight ? filterStyles.chipActiveHighlight : filterStyles.chipActive),
+              ]}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  filterStyles.chipText,
+                  highlight && filterStyles.chipTextHighlight,
+                  isActive && (highlight ? filterStyles.chipTextActiveHighlight : filterStyles.chipTextActive),
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
 const filterStyles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  wrapper: {
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
     borderBottomColor: "#D3CBBF",
+    paddingVertical: 8,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  rowLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#6B6560",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    width: 52,
+    flexShrink: 0,
+  },
+  chipsContainer: {
+    flexDirection: "row",
+    gap: 8,
+    paddingRight: 8,
   },
   chip: {
     borderRadius: 20,
@@ -256,6 +293,38 @@ const filterStyles = StyleSheet.create({
   chipTextActive: {
     color: "#DCF21E",
   },
+
+  // Styles highlight pour le filtre variété
+  rowHighlight: {
+    backgroundColor: "#F0F9F4",
+    borderTopWidth: 1,
+    borderTopColor: "#D3CBBF",
+    paddingVertical: 10,
+  },
+  rowLabelHighlight: {
+    color: "#003c38",
+    fontWeight: "800",
+    fontSize: 12,
+  },
+  chipHighlight: {
+    backgroundColor: "#FFFFFF",
+    borderColor: "#003c38",
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  chipActiveHighlight: {
+    backgroundColor: "#003c38",
+    borderColor: "#003c38",
+  },
+  chipTextHighlight: {
+    color: "#003c38",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  chipTextActiveHighlight: {
+    color: "#DCF21E",
+  },
 });
 
 // ---- Écran principal ----
@@ -263,19 +332,61 @@ const filterStyles = StyleSheet.create({
 export default function DonneesScreen() {
   const { sessions, records, removeRecord, resetAll } = useSession();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedAire, setSelectedAire] = useState<string | null>(null);
+  const [selectedVariety, setSelectedVariety] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  const filteredRecords =
-    selectedSessionId === null
-      ? records
-      : records.filter((r) => r.sessionId === selectedSessionId);
+  // Options dynamiques pour Aire et Variété (basées sur les données existantes)
+  const aireOptions = useMemo(() => {
+    const base = records
+      .filter((r) => !selectedSessionId || r.sessionId === selectedSessionId);
+    const unique = [...new Set(base.map((r) => r.aire))]
+      .sort((a, b) => parseInt(a) - parseInt(b));
+    return [
+      { value: null, label: "Toutes" },
+      ...unique.map((v) => ({ value: v, label: `Aire ${v}` })),
+    ];
+  }, [records, selectedSessionId]);
 
-  const filteredSessions =
-    selectedSessionId === null
-      ? sessions
-      : sessions.filter((s) => s.id === selectedSessionId);
+  const varietyOptions = useMemo(() => {
+    const base = records
+      .filter((r) => !selectedSessionId || r.sessionId === selectedSessionId);
+    const unique = [...new Set(base.map((r) => r.variety))]
+      .sort((a, b) => parseInt(a) - parseInt(b));
+    return [
+      { value: null, label: "Toutes" },
+      ...unique.map((v) => ({ value: v, label: `Var. ${v}` })),
+    ];
+  }, [records, selectedSessionId]);
+
+  const sessionOptions = useMemo(() => [
+    { value: null, label: "Toutes" },
+    ...sessions.map((s) => ({ value: s.id, label: s.projectId })),
+  ], [sessions]);
+
+  // Application des filtres
+  const filteredRecords = useMemo(() => {
+    return records.filter((r) => {
+      if (selectedSessionId && r.sessionId !== selectedSessionId) return false;
+      if (selectedAire && r.aire !== selectedAire) return false;
+      if (selectedVariety && r.variety !== selectedVariety) return false;
+      return true;
+    });
+  }, [records, selectedSessionId, selectedAire, selectedVariety]);
+
+  const filteredSessions = useMemo(() =>
+    selectedSessionId ? sessions.filter((s) => s.id === selectedSessionId) : sessions,
+    [sessions, selectedSessionId]
+  );
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId);
+
+  // Réinitialiser les filtres Aire/Variété quand on change de session
+  function handleSelectSession(id: string | null) {
+    setSelectedSessionId(id);
+    setSelectedAire(null);
+    setSelectedVariety(null);
+  }
 
   async function handleExport() {
     if (filteredRecords.length === 0) {
@@ -287,7 +398,9 @@ export default function DonneesScreen() {
       await exportToXLSX(
         filteredRecords,
         sessions,
-        selectedSession?.projectId
+        selectedSession?.projectId,
+        // Si aucune session sélectionnée → mode multi-onglets
+        selectedSessionId === null
       );
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -327,21 +440,24 @@ export default function DonneesScreen() {
           onPress: async () => {
             await resetAll();
             setSelectedSessionId(null);
+            setSelectedAire(null);
+            setSelectedVariety(null);
           },
         },
       ]
     );
   }
 
-  // Calcul des totaux pour la session sélectionnée
+  // Calcul des totaux pour les données filtrées
   const totalRecords = filteredRecords.length;
-  const totalPlants = filteredRecords.reduce(
-    (sum, r) => sum + totalCounts(r.counts),
-    0
-  );
+  const totalPlants = filteredRecords.reduce((sum, r) => sum + totalCounts(r.counts), 0);
   const totalVivants = filteredRecords.reduce((sum, r) => sum + r.counts.Vivant, 0);
-  const avgRate =
-    totalPlants > 0 ? Math.round((totalVivants / totalPlants) * 100) : 0;
+  const avgRate = totalPlants > 0 ? Math.round((totalVivants / totalPlants) * 100) : 0;
+
+  // Label du bouton export
+  const exportLabel = selectedSessionId === null
+    ? "⬇ Télécharger XLSX (toutes sessions)"
+    : "⬇ Télécharger XLSX";
 
   return (
     <ScreenContainer containerClassName="bg-primary" safeAreaClassName="bg-background">
@@ -355,13 +471,31 @@ export default function DonneesScreen() {
         )}
       </View>
 
-      {/* Filtre sessions */}
+      {/* Filtres */}
       {sessions.length > 0 && (
-        <SessionFilter
-          sessions={sessions}
-          selectedId={selectedSessionId}
-          onSelect={setSelectedSessionId}
-        />
+        <View style={filterStyles.wrapper}>
+          <FilterBar
+            label="Session"
+            options={sessionOptions}
+            selected={selectedSessionId}
+            onSelect={handleSelectSession}
+          />
+          {aireOptions.length > 2 && (
+            <FilterBar
+              label="Aire"
+              options={aireOptions}
+              selected={selectedAire}
+              onSelect={setSelectedAire}
+            />
+          )}
+          <FilterBar
+            label="Variété"
+            options={varietyOptions}
+            selected={selectedVariety}
+            onSelect={setSelectedVariety}
+            highlight
+          />
+        </View>
       )}
 
       <FlatList
@@ -370,20 +504,38 @@ export default function DonneesScreen() {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           filteredRecords.length > 0 ? (
-            <SurvivalChart
-              records={filteredRecords}
-              title={selectedSessionId ? "Répartition de la session" : "Répartition globale"}
-            />
+            <View>
+              <VarietyChart
+                records={filteredRecords}
+                title="Répartition par variété"
+              />
+              <SurvivalChart
+                records={filteredRecords}
+                title={
+                  selectedAire
+                    ? `Aire ${selectedAire}`
+                    : selectedVariety
+                    ? `Variété ${selectedVariety}`
+                    : selectedSessionId
+                    ? "Répartition par état"
+                    : "Répartition par état"
+                }
+              />
+            </View>
           ) : null
         }
         renderItem={({ item }) => (
-          <RecordCard record={item} onDelete={() => handleDeleteRecord(item)} />
+          <RecordCard
+            record={item}
+            sessions={sessions}
+            onDelete={() => handleDeleteRecord(item)}
+          />
         )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>
             {records.length === 0
               ? "Aucune donnée enregistrée.\nCommence un comptage dans l'onglet Comptage."
-              : "Aucune donnée pour cette session."}
+              : "Aucune donnée pour ces filtres."}
           </Text>
         }
         ListFooterComponent={
@@ -396,7 +548,7 @@ export default function DonneesScreen() {
                 activeOpacity={0.85}
               >
                 <Text style={styles.exportBtnText}>
-                  {isExporting ? "Export en cours…" : "⬇ Télécharger XLSX"}
+                  {isExporting ? "Export en cours…" : exportLabel}
                 </Text>
               </TouchableOpacity>
 
@@ -437,7 +589,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 16,
+    paddingBottom: 120,
   },
   emptyText: {
     textAlign: "center",

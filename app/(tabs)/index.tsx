@@ -7,6 +7,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Alert,
   FlatList,
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -167,7 +168,12 @@ export default function SessionScreen() {
     <ScreenContainer containerClassName="bg-primary" safeAreaClassName="bg-background">
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🌱 Survival</Text>
+        <Image
+          source={require("@/assets/images/icon_transparent.png")}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.headerTitle}>Survival</Text>
         <Text style={styles.headerSubtitle}>Comptage de plants de saules</Text>
       </View>
 
@@ -257,6 +263,11 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     alignItems: "center",
+  },
+  headerLogo: {
+    width: 48,
+    height: 48,
+    marginBottom: 6,
   },
   headerTitle: {
     fontSize: 28,
