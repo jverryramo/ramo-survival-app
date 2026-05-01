@@ -31,7 +31,7 @@ const env = {
   appName: "Survival",
   appSlug: "ramo-survival-app",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
-  logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663330668490/ksi889UkXAKAMnUAYMn2VV/survival-app-icon-Bw75YawDSj8yu4LwvEZGxe.png",
+  logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663330668490/ksi889UkXAKAMnUAYMn2VV/icon_new-gHhANUvnjUGpUb26o6Fg6A.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -107,6 +107,12 @@ const config: ExpoConfig = {
       },
     ],
   ],
+  updates: {
+    url: "https://u.expo.dev/505589cb-f763-40da-8cbc-f70c2f71d5c3",
+  },
+  runtimeVersion: {
+    policy: "appVersion",
+  },
   extra: {
     eas: {
       projectId: "505589cb-f763-40da-8cbc-f70c2f71d5c3",
