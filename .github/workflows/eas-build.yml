@@ -1,0 +1,32 @@
+name: EAS Build — iOS + Android
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build iOS + Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm install
+
+      - name: Installer EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build iOS + Android
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
+        run: eas build --platform all --profile production --non-interactive
