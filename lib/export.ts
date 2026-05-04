@@ -8,7 +8,7 @@ import { Platform } from "react-native";
 import * as XLSX from "xlsx";
 import { Session, FieldRecord, totalCounts, survivalRate } from "./types";
 
-// ---- Construction des lignes ----
+// ---- Construction des lignes pour une liste de records ----
 
 function buildRows(records: FieldRecord[], sessions: Session[]) {
   const sessionMap = new Map<string, Session>(
@@ -39,10 +39,46 @@ function buildRows(records: FieldRecord[], sessions: Session[]) {
   });
 }
 
-function buildWorkbook(rows: ReturnType<typeof buildRows>) {
-  const worksheet = XLSX.utils.json_to_sheet(rows);
+// ---- Construction du classeur ----
+// multiSheet=true → un onglet par session (export "toutes sessions")
+// multiSheet=false → un seul onglet "Données"
+
+function buildWorkbook(
+  records: FieldRecord[],
+  sessions: Session[],
+  multiSheet: boolean
+): XLSX.WorkBook {
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Données");
+
+  if (multiSheet && sessions.length > 1) {
+    // Un onglet par session, dans l'ordre des sessions
+    for (const session of sessions) {
+      const sessionRecords = records.filter((r) => r.sessionId === session.id);
+      if (sessionRecords.length === 0) continue;
+
+      const rows = buildRows(sessionRecords, sessions);
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+
+      // Nom de l'onglet : projectId, caractères invalides remplacés, max 31 chars (limite Excel)
+      const sheetName = session.projectId
+        .replace(/[\\/*?[\]:]/g, "_")
+        .slice(0, 31);
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+    }
+
+    // Fallback si aucun onglet créé
+    if (workbook.SheetNames.length === 0) {
+      const rows = buildRows(records, sessions);
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Données");
+    }
+  } else {
+    // Onglet unique
+    const rows = buildRows(records, sessions);
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Données");
+  }
+
   return workbook;
 }
 
@@ -58,19 +94,17 @@ function buildFilename(projectId?: string): string {
 async function exportWeb(
   records: FieldRecord[],
   sessions: Session[],
-  projectId?: string
+  projectId?: string,
+  multiSheet?: boolean
 ): Promise<void> {
-  const rows = buildRows(records, sessions);
-  const workbook = buildWorkbook(rows);
+  const workbook = buildWorkbook(records, sessions, multiSheet ?? false);
   const filename = buildFilename(projectId);
 
-  // Générer un ArrayBuffer et créer un Blob
   const wbout = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
   const blob = new Blob([wbout], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 
-  // Créer un lien de téléchargement temporaire
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -86,9 +120,9 @@ async function exportWeb(
 async function exportNative(
   records: FieldRecord[],
   sessions: Session[],
-  projectId?: string
+  projectId?: string,
+  multiSheet?: boolean
 ): Promise<void> {
-  // Import dynamique pour éviter les erreurs sur web
   const [FileSystem, Sharing] = await Promise.all([
     import("expo-file-system/legacy"),
     import("expo-sharing"),
@@ -99,20 +133,15 @@ async function exportNative(
     throw new Error("Le partage de fichiers n'est pas disponible sur cet appareil.");
   }
 
-  const rows = buildRows(records, sessions);
-  const workbook = buildWorkbook(rows);
+  const workbook = buildWorkbook(records, sessions, multiSheet ?? false);
   const filename = buildFilename(projectId);
 
-  // Encoder en base64
   const base64 = XLSX.write(workbook, { type: "base64", bookType: "xlsx" });
-
-  // Écrire dans le répertoire de documents (persistant)
   const fileUri = `${FileSystem.documentDirectory}${filename}`;
   await FileSystem.writeAsStringAsync(fileUri, base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
-  // Ouvrir la feuille de partage native
   await Sharing.shareAsync(fileUri, {
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     dialogTitle: "Exporter les données Survival",
@@ -125,15 +154,16 @@ async function exportNative(
 export async function exportToXLSX(
   records: FieldRecord[],
   sessions: Session[],
-  projectId?: string
+  projectId?: string,
+  multiSheet?: boolean
 ): Promise<void> {
   if (records.length === 0) {
     throw new Error("Aucune donnée à exporter.");
   }
 
   if (Platform.OS === "web") {
-    await exportWeb(records, sessions, projectId);
+    await exportWeb(records, sessions, projectId, multiSheet);
   } else {
-    await exportNative(records, sessions, projectId);
+    await exportNative(records, sessions, projectId, multiSheet);
   }
 }
