@@ -5,7 +5,6 @@
 import React, { useMemo, useState } from "react";
 import {
   Alert,
-  FlatList,
   Platform,
   ScrollView,
   StyleSheet,
@@ -498,61 +497,60 @@ export default function DonneesScreen() {
         </View>
       )}
 
-      <FlatList
+      <ScrollView
         style={{ flex: 1 }}
-        data={filteredRecords}
-        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          filteredRecords.length > 0 ? (
-            <View>
-              <VarietyChart
-                records={filteredRecords}
-                title="Répartition par variété"
-              />
-
-            </View>
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <RecordCard
-            record={item}
-            sessions={sessions}
-            onDelete={() => handleDeleteRecord(item)}
+      >
+        {/* Graphique variété */}
+        {filteredRecords.length > 0 && (
+          <VarietyChart
+            records={filteredRecords}
+            title="Répartition par variété"
           />
         )}
-        ListEmptyComponent={
+
+        {/* Liste des enregistrements */}
+        {filteredRecords.length === 0 ? (
           <Text style={styles.emptyText}>
             {records.length === 0
               ? "Aucune donnée enregistrée.\nCommence un comptage dans l'onglet Comptage."
               : "Aucune donnée pour ces filtres."}
           </Text>
-        }
-        ListFooterComponent={
-          records.length > 0 ? (
-            <View style={styles.footer}>
-              <TouchableOpacity
-                style={[styles.exportBtn, isExporting && styles.exportBtnDisabled]}
-                onPress={handleExport}
-                disabled={isExporting}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.exportBtnText}>
-                  {isExporting ? "Export en cours…" : exportLabel}
-                </Text>
-              </TouchableOpacity>
+        ) : (
+          filteredRecords.map((item) => (
+            <RecordCard
+              key={item.id}
+              record={item}
+              sessions={sessions}
+              onDelete={() => handleDeleteRecord(item)}
+            />
+          ))
+        )}
 
-              <TouchableOpacity
-                style={styles.resetBtn}
-                onPress={handleResetAll}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.resetBtnText}>Réinitialiser tout</Text>
-              </TouchableOpacity>
-            </View>
-          ) : null
-        }
-      />
+        {/* Boutons export et réinitialiser — toujours visibles si données existent */}
+        {records.length > 0 && (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.exportBtn, isExporting && styles.exportBtnDisabled]}
+              onPress={handleExport}
+              disabled={isExporting}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.exportBtnText}>
+                {isExporting ? "Export en cours…" : exportLabel}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.resetBtn}
+              onPress={handleResetAll}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.resetBtnText}>Réinitialiser tout</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
     </ScreenContainer>
   );
 }

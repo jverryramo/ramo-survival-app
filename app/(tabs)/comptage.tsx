@@ -395,6 +395,7 @@ export default function ComptageScreen() {
             placeholderTextColor="#F59E0B"
             keyboardType="decimal-pad"
             returnKeyType="go"
+            onSubmitEditing={handleStartCounting}
           />
         </View>
 

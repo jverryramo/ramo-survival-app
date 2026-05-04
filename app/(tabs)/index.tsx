@@ -178,6 +178,7 @@ export default function SessionScreen() {
       </View>
 
       <FlatList
+        style={{ flex: 1 }}
         data={sessions}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 32,
+    paddingBottom: 120,
   },
   card: {
     backgroundColor: "#FFFFFF",
