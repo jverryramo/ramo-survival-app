@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   soundToggle: {
     position: "absolute",
     right: 16,
-    top: 52,
+    top: 10,
     width: 36,
     height: 36,
     alignItems: "center",
