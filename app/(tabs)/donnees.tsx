@@ -18,7 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 
 import { useSession } from "@/lib/session-context";
-import { FieldRecord, Session, STATE_KEYS, totalCounts, survivalRate } from "@/lib/types";
+import { FieldRecord, Session, STATE_KEYS, totalCounts } from "@/lib/types";
 import { exportToXLSX } from "@/lib/export";
 
 // ---- Composant carte d'enregistrement ----
@@ -33,7 +33,7 @@ function RecordCard({
   onDelete: () => void;
 }) {
   const total = totalCounts(record.counts);
-  const rate = survivalRate(record.counts);
+
   const session = sessions.find((s) => s.id === record.sessionId);
 
   return (
@@ -48,9 +48,7 @@ function RecordCard({
           </Text>
         </View>
         <View style={cardStyles.headerRight}>
-          <View style={cardStyles.rateBadge}>
-            <Text style={cardStyles.rateBadgeText}>{rate}% survie</Text>
-          </View>
+
           <TouchableOpacity
             onPress={onDelete}
             style={cardStyles.deleteBtn}
@@ -440,8 +438,6 @@ export default function DonneesScreen() {
   // Calcul des totaux pour les données filtrées
   const totalRecords = filteredRecords.length;
   const totalPlants = filteredRecords.reduce((sum, r) => sum + totalCounts(r.counts), 0);
-  const totalVivants = filteredRecords.reduce((sum, r) => sum + r.counts.Vivant, 0);
-  const avgRate = totalPlants > 0 ? Math.round((totalVivants / totalPlants) * 100) : 0;
 
   // Label du bouton export
   const exportLabel = selectedSessionId === null
@@ -455,7 +451,7 @@ export default function DonneesScreen() {
         <Text style={styles.headerTitle}>Données</Text>
         {totalRecords > 0 && (
           <Text style={styles.headerStats}>
-            {totalRecords} aire{totalRecords !== 1 ? "s" : ""} · {totalPlants} plants · {avgRate}% survie
+            {totalRecords} aire{totalRecords !== 1 ? "s" : ""} · {totalPlants} plants
           </Text>
         )}
       </View>

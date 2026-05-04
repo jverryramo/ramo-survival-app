@@ -59,6 +59,15 @@ function formatWorksheet(worksheet: XLSX.WorkSheet, rowCount: number) {
     { wch: 14 },  // Opérateur
     { wch: 12 },  // Date
   ];
+
+  // AutoFilter sur toutes les colonnes (permet tri et filtrage dans Excel)
+  const lastCol = 11; // 12 colonnes (A=0 à L=11)
+  worksheet["!autofilter"] = {
+    ref: XLSX.utils.encode_range(
+      { r: 0, c: 0 },
+      { r: rowCount, c: lastCol }
+    ),
+  };
 }
 
 // ---- Construction du classeur ----
