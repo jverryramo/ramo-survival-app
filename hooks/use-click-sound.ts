@@ -13,18 +13,24 @@ const CLICK_SOUND_SOURCE = Platform.OS !== "web"
 
 export function useClickSound() {
   const playerRef = useRef<any>(null);
+  const readyRef = useRef(false);
 
   useEffect(() => {
     if (Platform.OS === "web" || !CLICK_SOUND_SOURCE) return;
 
     let cancelled = false;
 
-    // Import expo-audio dynamiquement pour éviter le crash sur web
     const init = async () => {
       try {
-        const { createAudioPlayer } = require("expo-audio");
+        const { createAudioPlayer, setAudioModeAsync } = require("expo-audio");
+
+        // Activer le son même en mode silencieux iOS
+        await setAudioModeAsync({ playsInSilentMode: true });
+
         if (cancelled) return;
-        playerRef.current = createAudioPlayer(CLICK_SOUND_SOURCE);
+        const player = createAudioPlayer(CLICK_SOUND_SOURCE);
+        playerRef.current = player;
+        readyRef.current = true;
       } catch (_) {
         // Silently fail if expo-audio is not available
       }
@@ -35,16 +41,17 @@ export function useClickSound() {
       cancelled = true;
       if (playerRef.current) {
         try {
-          playerRef.current.release();
+          playerRef.current.remove();
         } catch (_) {}
         playerRef.current = null;
+        readyRef.current = false;
       }
     };
   }, []);
 
   const playClick = useCallback(() => {
     if (Platform.OS === "web") return;
-    if (!playerRef.current) return;
+    if (!readyRef.current || !playerRef.current) return;
     try {
       playerRef.current.seekTo(0);
       playerRef.current.play();
