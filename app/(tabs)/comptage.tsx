@@ -19,9 +19,7 @@ import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
 import { useSoundEnabled } from "@/hooks/use-sound";
 import { useClickSound } from "@/hooks/use-click-sound";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { ScreenContainer } from "@/components/screen-container";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSession } from "@/lib/session-context";
 import { PlantCounts, STATE_KEYS, createEmptyCounts, totalCounts } from "@/lib/types";
 
@@ -369,7 +367,7 @@ export default function ComptageScreen() {
   // MODE CONFIG — Formulaire Aire / Longueur / Variété
   // ============================================================
   return (
-    <ScreenContainer containerClassName="bg-primary" safeAreaClassName="bg-background">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F2EE' }} edges={['top', 'left', 'right']}>
       {header}
 
       <ScrollView
@@ -432,7 +430,7 @@ export default function ComptageScreen() {
           </Text>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }
 

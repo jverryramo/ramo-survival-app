@@ -20,7 +20,7 @@ import {
 import { useRouter, type Href } from "expo-router";
 import * as Haptics from "expo-haptics";
 
-import { ScreenContainer } from "@/components/screen-container";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { DatePickerField } from "@/components/DatePickerField";
 import { useSession } from "@/lib/session-context";
 import { Session } from "@/lib/types";
@@ -165,7 +165,7 @@ export default function SessionScreen() {
   }
 
   return (
-    <ScreenContainer containerClassName="bg-primary" safeAreaClassName="bg-background">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F2EE' }} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <Image
@@ -251,7 +251,7 @@ export default function SessionScreen() {
           ) : null
         }
       />
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }
 

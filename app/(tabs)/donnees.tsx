@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 
-import { ScreenContainer } from "@/components/screen-container";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { VarietyChart } from "@/components/VarietyChart";
 import { useSession } from "@/lib/session-context";
@@ -459,7 +459,7 @@ export default function DonneesScreen() {
     : "⬇ Télécharger XLSX";
 
   return (
-    <ScreenContainer containerClassName="bg-primary" safeAreaClassName="bg-background">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F2EE' }} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Données</Text>
@@ -551,7 +551,7 @@ export default function DonneesScreen() {
           </View>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </SafeAreaView>
   );
 }
 
