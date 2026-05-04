@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { VarietyChart } from "@/components/VarietyChart";
+
 import { useSession } from "@/lib/session-context";
 import { FieldRecord, Session, STATE_KEYS, totalCounts, survivalRate } from "@/lib/types";
 import { exportToXLSX } from "@/lib/export";
@@ -332,7 +332,7 @@ export default function DonneesScreen() {
   const { sessions, records, removeRecord, resetAll } = useSession();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [selectedAire, setSelectedAire] = useState<string | null>(null);
-  const [selectedVariety, setSelectedVariety] = useState<string | null>(null);
+
   const [isExporting, setIsExporting] = useState(false);
 
   // Options dynamiques pour Aire et Variété (basées sur les données existantes)
@@ -347,16 +347,6 @@ export default function DonneesScreen() {
     ];
   }, [records, selectedSessionId]);
 
-  const varietyOptions = useMemo(() => {
-    const base = records
-      .filter((r) => !selectedSessionId || r.sessionId === selectedSessionId);
-    const unique = [...new Set(base.map((r) => r.variety))]
-      .sort((a, b) => parseInt(a) - parseInt(b));
-    return [
-      { value: null, label: "Toutes" },
-      ...unique.map((v) => ({ value: v, label: `Var. ${v}` })),
-    ];
-  }, [records, selectedSessionId]);
 
   const sessionOptions = useMemo(() => [
     { value: null, label: "Toutes" },
@@ -368,10 +358,10 @@ export default function DonneesScreen() {
     return records.filter((r) => {
       if (selectedSessionId && r.sessionId !== selectedSessionId) return false;
       if (selectedAire && r.aire !== selectedAire) return false;
-      if (selectedVariety && r.variety !== selectedVariety) return false;
+
       return true;
     });
-  }, [records, selectedSessionId, selectedAire, selectedVariety]);
+  }, [records, selectedSessionId, selectedAire]);
 
   const filteredSessions = useMemo(() =>
     selectedSessionId ? sessions.filter((s) => s.id === selectedSessionId) : sessions,
@@ -384,7 +374,7 @@ export default function DonneesScreen() {
   function handleSelectSession(id: string | null) {
     setSelectedSessionId(id);
     setSelectedAire(null);
-    setSelectedVariety(null);
+
   }
 
   async function handleExport() {
@@ -440,7 +430,7 @@ export default function DonneesScreen() {
             await resetAll();
             setSelectedSessionId(null);
             setSelectedAire(null);
-            setSelectedVariety(null);
+        
           },
         },
       ]
@@ -487,13 +477,6 @@ export default function DonneesScreen() {
               onSelect={setSelectedAire}
             />
           )}
-          <FilterBar
-            label="Variété"
-            options={varietyOptions}
-            selected={selectedVariety}
-            onSelect={setSelectedVariety}
-            highlight
-          />
         </View>
       )}
 
@@ -501,14 +484,6 @@ export default function DonneesScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.listContent}
       >
-        {/* Graphique variété */}
-        {filteredRecords.length > 0 && (
-          <VarietyChart
-            records={filteredRecords}
-            title="Répartition par variété"
-          />
-        )}
-
         {/* Liste des enregistrements */}
         {filteredRecords.length === 0 ? (
           <Text style={styles.emptyText}>

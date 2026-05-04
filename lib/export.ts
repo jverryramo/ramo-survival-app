@@ -6,26 +6,28 @@
 
 import { Platform } from "react-native";
 import * as XLSX from "xlsx";
-import { Session, FieldRecord, totalCounts, survivalRate } from "./types";
+import { Session, FieldRecord, totalCounts } from "./types";
 
-// ---- Construction des lignes pour une liste de records ----
+// ---- Ordre des colonnes ----
+// Classement logique : identification → mesure → comptages → total
 
 function buildRows(records: FieldRecord[], sessions: Session[]) {
   const sessionMap = new Map<string, Session>(
     sessions.map((s) => [s.id, s])
   );
 
-  return records.map((r) => {
+  // Trier par aire (numérique croissant)
+  const sorted = [...records].sort(
+    (a, b) => parseInt(a.aire) - parseInt(b.aire)
+  );
+
+  return sorted.map((r) => {
     const session = sessionMap.get(r.sessionId);
     const total = totalCounts(r.counts);
-    const rate = survivalRate(r.counts);
     return {
-      Date: session?.date ?? "",
-      Projet: session?.projectId ?? "",
-      Opérateur: session?.operator ?? "",
       Aire: r.aire,
-      "Longueur (m)": r.length_m,
       Variété: r.variety,
+      "Longueur (m)": r.length_m,
       Vivant: r.counts.Vivant,
       Base: r.counts.Base,
       "Non débourré": r.counts.NonDebourre,
@@ -33,15 +35,35 @@ function buildRows(records: FieldRecord[], sessions: Session[]) {
       Manquant: r.counts.Manquant,
       "Plant échappé": r.counts.PlantEchappe,
       Total: total,
-      "Taux survie (%)": rate,
-      Commentaire: r.comment,
+      Opérateur: session?.operator ?? "",
+      Date: session?.date ?? "",
     };
   });
 }
 
+// ---- Mise en forme de la feuille ----
+
+function formatWorksheet(worksheet: XLSX.WorkSheet, rowCount: number) {
+  // Largeurs de colonnes adaptées au contenu
+  worksheet["!cols"] = [
+    { wch: 6 },   // Aire
+    { wch: 8 },   // Variété
+    { wch: 12 },  // Longueur (m)
+    { wch: 8 },   // Vivant
+    { wch: 7 },   // Base
+    { wch: 14 },  // Non débourré
+    { wch: 7 },   // Mort
+    { wch: 10 },  // Manquant
+    { wch: 14 },  // Plant échappé
+    { wch: 7 },   // Total
+    { wch: 14 },  // Opérateur
+    { wch: 12 },  // Date
+  ];
+}
+
 // ---- Construction du classeur ----
 // multiSheet=true → un onglet par session (export "toutes sessions")
-// multiSheet=false → un seul onglet "Données"
+// multiSheet=false → un seul onglet avec le nom du projet
 
 function buildWorkbook(
   records: FieldRecord[],
@@ -50,7 +72,7 @@ function buildWorkbook(
 ): XLSX.WorkBook {
   const workbook = XLSX.utils.book_new();
 
-  if (multiSheet && sessions.length > 1) {
+  if (multiSheet && sessions.length > 0) {
     // Un onglet par session, dans l'ordre des sessions
     for (const session of sessions) {
       const sessionRecords = records.filter((r) => r.sessionId === session.id);
@@ -58,6 +80,7 @@ function buildWorkbook(
 
       const rows = buildRows(sessionRecords, sessions);
       const worksheet = XLSX.utils.json_to_sheet(rows);
+      formatWorksheet(worksheet, rows.length);
 
       // Nom de l'onglet : projectId, caractères invalides remplacés, max 31 chars (limite Excel)
       const sheetName = session.projectId
@@ -70,13 +93,23 @@ function buildWorkbook(
     if (workbook.SheetNames.length === 0) {
       const rows = buildRows(records, sessions);
       const worksheet = XLSX.utils.json_to_sheet(rows);
+      formatWorksheet(worksheet, rows.length);
       XLSX.utils.book_append_sheet(workbook, worksheet, "Données");
     }
   } else {
     // Onglet unique
     const rows = buildRows(records, sessions);
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Données");
+    formatWorksheet(worksheet, rows.length);
+
+    // Nom de l'onglet = nom du projet si disponible
+    const session = sessions.find((s) =>
+      records.some((r) => r.sessionId === s.id)
+    );
+    const sheetName = session
+      ? session.projectId.replace(/[\\/*?[\]:]/g, "_").slice(0, 31)
+      : "Données";
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   }
 
   return workbook;
