@@ -304,10 +304,12 @@ export default function ComptageScreen() {
             <Text style={styles.terrainTotalLabel}>TOTAL</Text>
             <Text style={styles.terrainTotalValue}>{total}</Text>
           </View>
+        </View>
+        {/* Toggle son entre header et boutons */}
+        <View style={styles.soundToggleRow}>
           <TouchableOpacity
             onPress={toggleSound}
-            style={styles.soundToggle}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
           >
             <Text style={styles.soundToggleText}>{soundEnabled ? "🔊" : "🔇"}</Text>
           </TouchableOpacity>
@@ -565,16 +567,12 @@ const styles = StyleSheet.create({
   },
 
   // Toggle son
-  soundToggle: {
-    position: "absolute",
-    right: 16,
-    top: 10,
-    width: 36,
-    height: 36,
+  soundToggleRow: {
     alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 4,
+    backgroundColor: "#003c38",
   },
   soundToggleText: {
-    fontSize: 20,
+    fontSize: 18,
   },
 });
