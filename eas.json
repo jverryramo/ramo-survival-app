@@ -1,28 +1,45 @@
 {
   "cli": {
     "version": ">= 12.0.0",
-    "appVersionSource": "remote",
-    "requireCommit": false
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios": { "simulator": true }
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
-      "distribution": "internal",
-      "cache": { "disabled": true },
-      "android": {
-        "buildType": "apk",
-        "credentialsSource": "remote"
-      },
+      "distribution": "store",
       "ios": {
-        "buildConfiguration": "Release",
-        "distribution": "internal",
-        "credentialsSource": "remote"
+        "buildConfiguration": "Release"
+      },
+      "android": {
+        "buildType": "app-bundle"
       }
     }
   },
-  "submit": {}
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6766601184",
+        "appleId": "jverry@ramo.eco",
+        "appleTeamId": "QZF934S2T7",
+        "ascApiKeyIssuerId": "cd6e693d-920d-4ece-820d-62b6351b30a6",
+        "ascApiKeyId": "789LA3U89S",
+        "ascApiKeyPath": "./AuthKey_789LA3U89S.p8"
+      }
+    }
+  }
 }
