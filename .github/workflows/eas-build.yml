@@ -1,37 +1,52 @@
-name: EAS Build — APK Android + IPA iOS
-
+name: EAS Build + Submit TestFlight
 on:
   push:
     branches:
       - main
-
 jobs:
-  build:
-    name: Build iOS + Android
+  build-and-submit:
+    name: Build iOS (production) + Submit TestFlight
     runs-on: ubuntu-latest
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
-
       - name: Installer Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-
+      - name: Installer pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
       - name: Installer les dépendances
-        run: npm install
-
-      - name: Supprimer le cache NativeWind (évite l'erreur Metro SHA-1)
-        run: |
-          rm -rf node_modules/react-native-css-interop/.cache || true
-          rm -rf node_modules/nativewind/node_modules/react-native-css-interop/.cache || true
-
+        run: pnpm install
       - name: Installer EAS CLI
         run: npm install -g eas-cli
-
-      - name: Build iOS + Android
+      - name: Écrire la clé API Apple
+        run: echo "${{ secrets.ASC_API_KEY_P8 }}" > AuthKey_789LA3U89S.p8
+      - name: Build iOS (production) + Submit TestFlight
+        run: eas build --platform ios --profile production --non-interactive --auto-submit
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
-        run: eas build --platform all --profile production --non-interactive
+  build-android:
+    name: Build Android (preview APK)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Installer les dépendances
+        run: pnpm install
+      - name: Installer EAS CLI
+        run: npm install -g eas-cli
+      - name: Build Android APK
+        run: eas build --platform android --profile preview --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
