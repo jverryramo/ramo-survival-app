@@ -20,7 +20,7 @@ jobs:
         with:
           version: 11
       - name: Installer les dépendances
-        run: pnpm install
+        run: pnpm install --config.dangerouslyIgnoreBuilds=true
       - name: Installer EAS CLI
         run: npm install -g eas-cli
       - name: Écrire la clé API Apple
@@ -44,7 +44,7 @@ jobs:
         with:
           version: 11
       - name: Installer les dépendances
-        run: pnpm install
+        run: pnpm install --config.dangerouslyIgnoreBuilds=true
       - name: Installer EAS CLI
         run: npm install -g eas-cli
       - name: Build iOS (preview Ad Hoc)
@@ -66,7 +66,7 @@ jobs:
         with:
           version: 11
       - name: Installer les dépendances
-        run: pnpm install
+        run: pnpm install --config.dangerouslyIgnoreBuilds=true
       - name: Installer EAS CLI
         run: npm install -g eas-cli
       - name: Build Android APK
