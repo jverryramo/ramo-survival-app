@@ -18,9 +18,9 @@ jobs:
       - name: Installer pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 9
       - name: Installer les dépendances
-        run: pnpm install --config.dangerouslyIgnoreBuilds=true
+        run: pnpm install
       - name: Installer EAS CLI
         run: npm install -g eas-cli
       - name: Écrire la clé API Apple
@@ -42,9 +42,9 @@ jobs:
       - name: Installer pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 9
       - name: Installer les dépendances
-        run: pnpm install --config.dangerouslyIgnoreBuilds=true
+        run: pnpm install
       - name: Installer EAS CLI
         run: npm install -g eas-cli
       - name: Build iOS (preview Ad Hoc)
@@ -64,9 +64,9 @@ jobs:
       - name: Installer pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 9
       - name: Installer les dépendances
-        run: pnpm install --config.dangerouslyIgnoreBuilds=true
+        run: pnpm install
       - name: Installer EAS CLI
         run: npm install -g eas-cli
       - name: Build Android APK
