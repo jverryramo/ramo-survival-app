@@ -18,7 +18,7 @@ jobs:
       - name: Installer pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
       - name: Installer les dépendances
         run: pnpm install
       - name: Installer EAS CLI
@@ -27,6 +27,28 @@ jobs:
         run: echo "${{ secrets.ASC_API_KEY_P8 }}" > AuthKey_789LA3U89S.p8
       - name: Build iOS (production) + Submit TestFlight
         run: eas build --platform ios --profile production --non-interactive --auto-submit
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  build-ios-preview:
+    name: Build iOS (preview Ad Hoc)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - name: Installer les dépendances
+        run: pnpm install
+      - name: Installer EAS CLI
+        run: npm install -g eas-cli
+      - name: Build iOS (preview Ad Hoc)
+        run: eas build --platform ios --profile preview --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
   build-android:
@@ -42,7 +64,7 @@ jobs:
       - name: Installer pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
       - name: Installer les dépendances
         run: pnpm install
       - name: Installer EAS CLI
