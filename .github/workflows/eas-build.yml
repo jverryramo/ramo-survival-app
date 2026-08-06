@@ -4,6 +4,14 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    # Renouvellement automatique tous les ~80 jours pour éviter l'expiration TestFlight (90 jours)
+    # Déclenché le 1er janvier, 22 mars, 10 juin, 29 août, 17 novembre
+    - cron: '0 8 1 1 *'
+    - cron: '0 8 22 3 *'
+    - cron: '0 8 10 6 *'
+    - cron: '0 8 29 8 *'
+    - cron: '0 8 17 11 *'
 jobs:
   build-and-submit:
     name: Build iOS (production) + Submit TestFlight
