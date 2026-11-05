@@ -71,6 +71,7 @@ export interface Session {
 // --- Enregistrement terrain ---
 
 export interface FieldRecord {
+  gps?: import("./geolocation").GeoPosition;
   id: string;
   sessionId: string;
   aire: string;        // "1" à "20"

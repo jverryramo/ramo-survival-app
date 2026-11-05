@@ -4,8 +4,8 @@
 
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Alert } from "@/lib/alert";
 import {
-  Alert,
   FlatList,
   Image,
   Platform,
@@ -173,8 +173,8 @@ export default function SessionScreen() {
           style={styles.headerLogo}
           resizeMode="contain"
         />
-        <Text style={styles.headerTitle}>Survival</Text>
-        <Text style={styles.headerSubtitle}>Comptage de plants de saules</Text>
+        <Text style={styles.headerTitle}>Sessions</Text>
+        <Text style={styles.headerSubtitle}>Survival · Comptage de saules</Text>
       </View>
 
       <FlatList

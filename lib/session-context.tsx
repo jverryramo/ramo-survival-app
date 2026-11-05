@@ -9,6 +9,8 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import type { GeoPosition } from "./geolocation";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Session,
   FieldRecord,
@@ -24,6 +26,7 @@ import {
   deleteRecord,
   clearAllData,
   loadRecordsForSession,
+  updateRecord,
 } from "./store";
 
 // ---- Types du contexte ----
@@ -45,9 +48,12 @@ interface SessionContextType {
     length_m: string,
     variety: string,
     counts: PlantCounts,
-    comment: string
+    comment: string,
+    gps?: GeoPosition,
+    id?: string
   ) => Promise<FieldRecord>;
   removeRecord: (recordId: string) => Promise<void>;
+  editRecord: (record: FieldRecord) => Promise<void>;
   resetAll: () => Promise<void>;
 
   // Rafraîchissement
@@ -80,9 +86,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       setIsLoading(true);
       await refresh();
+      const savedId = await AsyncStorage.getItem("survival_active_session");
+      const existing = await loadSessions();
+      setActiveSession(existing.find((s) => s.id === savedId) ?? null);
       setIsLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!isLoading) void AsyncStorage.setItem("survival_active_session", activeSession?.id ?? "").catch(() => {});
+  }, [activeSession, isLoading]);
 
   const createSession = useCallback(
     async (projectId: string, date?: string, operator?: string): Promise<Session> => {
@@ -110,7 +123,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       length_m: string,
       variety: string,
       counts: PlantCounts,
-      comment: string
+      comment: string,
+      gps?: GeoPosition,
+      id?: string
     ): Promise<FieldRecord> => {
       const record = await saveRecord({
         sessionId,
@@ -119,6 +134,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         variety,
         counts,
         comment,
+        gps,
+        id,
       });
       await refresh();
       return record;
@@ -156,6 +173,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         recordsForActiveSession,
         addRecord,
         removeRecord,
+        editRecord: async (record) => { await updateRecord(record); await refresh(); },
         resetAll,
         refresh,
         isLoading,

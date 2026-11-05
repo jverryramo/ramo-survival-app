@@ -11,7 +11,7 @@ import { Session, FieldRecord, totalCounts } from "./types";
 // ---- Ordre des colonnes ----
 // Classement logique : identification → mesure → comptages → total
 
-function buildRows(records: FieldRecord[], sessions: Session[]) {
+export function buildRows(records: FieldRecord[], sessions: Session[]) {
   const sessionMap = new Map<string, Session>(
     sessions.map((s) => [s.id, s])
   );
@@ -37,6 +37,10 @@ function buildRows(records: FieldRecord[], sessions: Session[]) {
       Total: total,
       Opérateur: session?.operator ?? "",
       Date: session?.date ?? "",
+      "Latitude (WGS84)": r.gps?.latitude ?? "",
+      "Longitude (WGS84)": r.gps?.longitude ?? "",
+      "Précision GPS (m)": r.gps?.accuracyMeters ?? "",
+      "Date et heure GPS (UTC)": r.gps?.capturedAt ?? "",
     };
   });
 }
@@ -58,10 +62,14 @@ function formatWorksheet(worksheet: XLSX.WorkSheet, rowCount: number) {
     { wch: 7 },   // Total
     { wch: 14 },  // Opérateur
     { wch: 12 },  // Date
+    { wch: 20 },  // Latitude
+    { wch: 20 },  // Longitude
+    { wch: 20 },  // Accuracy
+    { wch: 28 },  // GPS timestamp
   ];
 
   // AutoFilter sur toutes les colonnes (permet tri et filtrage dans Excel)
-  const lastCol = 11; // 12 colonnes (A=0 à L=11)
+  const lastCol = 15; // 16 colonnes, coordonnées GPS incluses
   worksheet["!autofilter"] = {
     ref: XLSX.utils.encode_range(
       { r: 0, c: 0 },

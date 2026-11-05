@@ -40,7 +40,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
-  version: "1.1.0",
+  version: "1.2.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -85,6 +85,12 @@ const config: ExpoConfig = {
     favicon: "./assets/images/favicon.png",
   },
   plugins: [
+    ["expo-location", {
+      locationWhenInUsePermission: "Autorisez Ramo à enregistrer la position GPS de vos relevés terrain.",
+      isIosBackgroundLocationEnabled: false,
+      isAndroidBackgroundLocationEnabled: false,
+      isAndroidForegroundServiceEnabled: false,
+    }],
     "expo-router",
     [
       "expo-splash-screen",

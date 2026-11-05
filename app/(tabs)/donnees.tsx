@@ -2,9 +2,10 @@
 // Écran Données — Historique et export XLSX
 // ============================================================
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { RecordEditor } from "@/components/record-editor";
+import { Alert } from "@/lib/alert";
 import {
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,7 +17,6 @@ import * as Haptics from "expo-haptics";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 import { useSession } from "@/lib/session-context";
 import { FieldRecord, Session, STATE_KEYS, totalCounts } from "@/lib/types";
 import { exportToXLSX } from "@/lib/export";
@@ -27,10 +27,12 @@ function RecordCard({
   record,
   sessions,
   onDelete,
+  onOpen,
 }: {
   record: FieldRecord;
   sessions: Session[];
   onDelete: () => void;
+  onOpen: () => void;
 }) {
   const total = totalCounts(record.counts);
 
@@ -39,16 +41,19 @@ function RecordCard({
   return (
     <View style={cardStyles.container}>
       <View style={cardStyles.header}>
-        <View style={cardStyles.headerLeft}>
+        <TouchableOpacity
+          style={cardStyles.headerLeft}
+          onPress={onOpen}
+          accessibilityLabel={`Ouvrir l’aire ${record.aire}`}
+        >
           <Text style={cardStyles.aireLabel}>Aire {record.aire}</Text>
           <Text style={cardStyles.meta}>
             Var. {record.variety}
             {record.length_m ? ` · ${record.length_m} m` : ""}
             {session ? ` · ${session.projectId}` : ""}
           </Text>
-        </View>
+        </TouchableOpacity>
         <View style={cardStyles.headerRight}>
-
           <TouchableOpacity
             onPress={onDelete}
             style={cardStyles.deleteBtn}
@@ -70,11 +75,13 @@ function RecordCard({
               style={[
                 cardStyles.badge,
                 { backgroundColor: state.bg },
-                state.border ? { borderWidth: 1, borderColor: state.border } : null,
+                state.border
+                  ? { borderWidth: 1, borderColor: state.border }
+                  : null,
               ]}
             >
               <Text style={[cardStyles.badgeText, { color: state.text }]}>
-                {state.label.substring(0, 3)} {count}
+                {state.label} · {count}
               </Text>
             </View>
           );
@@ -85,9 +92,30 @@ function RecordCard({
       </View>
 
       {/* Commentaire */}
+      {record.gps && (
+        <View style={{ paddingVertical: 8 }}>
+          <Text selectable style={{ color: "#003c38", fontSize: 12 }}>
+            GPS : {record.gps.latitude.toFixed(6)},{" "}
+            {record.gps.longitude.toFixed(6)}
+          </Text>
+          <Text style={{ color: "#6B6560", fontSize: 12 }}>
+            {record.gps.accuracyMeters === null
+              ? "Précision inconnue"
+              : "Précision : ± " + Math.round(record.gps.accuracyMeters) + " m"}
+            {" · "}
+            {new Date(record.gps.capturedAt).toLocaleString("fr-CA")}
+          </Text>
+        </View>
+      )}
       {record.comment ? (
         <Text style={cardStyles.comment}>{record.comment}</Text>
       ) : null}
+      {!record.gps && <Text style={cardStyles.meta}>Sans position GPS</Text>}
+      <TouchableOpacity onPress={onOpen} style={{ paddingVertical: 14 }}>
+        <Text style={{ color: "#003c38", fontWeight: "600" }}>
+          Consulter / modifier →
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -205,7 +233,12 @@ function FilterBar({
 }) {
   return (
     <View style={[filterStyles.row, highlight && filterStyles.rowHighlight]}>
-      <Text style={[filterStyles.rowLabel, highlight && filterStyles.rowLabelHighlight]}>
+      <Text
+        style={[
+          filterStyles.rowLabel,
+          highlight && filterStyles.rowLabelHighlight,
+        ]}
+      >
         {label}
       </Text>
       <ScrollView
@@ -222,7 +255,10 @@ function FilterBar({
               style={[
                 filterStyles.chip,
                 highlight && filterStyles.chipHighlight,
-                isActive && (highlight ? filterStyles.chipActiveHighlight : filterStyles.chipActive),
+                isActive &&
+                  (highlight
+                    ? filterStyles.chipActiveHighlight
+                    : filterStyles.chipActive),
               ]}
               activeOpacity={0.7}
             >
@@ -230,7 +266,10 @@ function FilterBar({
                 style={[
                   filterStyles.chipText,
                   highlight && filterStyles.chipTextHighlight,
-                  isActive && (highlight ? filterStyles.chipTextActiveHighlight : filterStyles.chipTextActive),
+                  isActive &&
+                    (highlight
+                      ? filterStyles.chipTextActiveHighlight
+                      : filterStyles.chipTextActive),
                 ]}
               >
                 {opt.label}
@@ -327,29 +366,49 @@ const filterStyles = StyleSheet.create({
 // ---- Écran principal ----
 
 export default function DonneesScreen() {
-  const { sessions, records, removeRecord, resetAll } = useSession();
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const { sessions, records, activeSession, removeRecord, resetAll } =
+    useSession();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(
+    activeSession?.id ?? null,
+  );
+  const [editing, setEditing] = useState<FieldRecord | null>(null);
+  const [settings, setSettings] = useState(false);
+  useEffect(() => {
+    setSelectedSessionId(activeSession?.id ?? null);
+    setSelectedAire(null);
+  }, [activeSession?.id]);
+  useEffect(() => {
+    if (selectedSessionId && !sessions.some((s) => s.id === selectedSessionId))
+      setSelectedSessionId(null);
+  }, [sessions, selectedSessionId]);
   const [selectedAire, setSelectedAire] = useState<string | null>(null);
 
   const [isExporting, setIsExporting] = useState(false);
 
   // Options dynamiques pour Aire et Variété (basées sur les données existantes)
   const aireOptions = useMemo(() => {
-    const base = records
-      .filter((r) => !selectedSessionId || r.sessionId === selectedSessionId);
-    const unique = [...new Set(base.map((r) => r.aire))]
-      .sort((a, b) => parseInt(a) - parseInt(b));
+    const base = records.filter(
+      (r) => !selectedSessionId || r.sessionId === selectedSessionId,
+    );
+    const unique = [...new Set(base.map((r) => r.aire))].sort(
+      (a, b) => parseInt(a) - parseInt(b),
+    );
     return [
       { value: null, label: "Toutes" },
       ...unique.map((v) => ({ value: v, label: `Aire ${v}` })),
     ];
   }, [records, selectedSessionId]);
 
-
-  const sessionOptions = useMemo(() => [
-    { value: null, label: "Toutes" },
-    ...sessions.map((s) => ({ value: s.id, label: s.projectId })),
-  ], [sessions]);
+  const sessionOptions = useMemo(
+    () => [
+      { value: null, label: "Toutes les sessions" },
+      ...sessions.map((s) => ({
+        value: s.id,
+        label: `${s.projectId} · ${s.date}`,
+      })),
+    ],
+    [sessions],
+  );
 
   // Application des filtres
   const filteredRecords = useMemo(() => {
@@ -361,9 +420,12 @@ export default function DonneesScreen() {
     });
   }, [records, selectedSessionId, selectedAire]);
 
-  const filteredSessions = useMemo(() =>
-    selectedSessionId ? sessions.filter((s) => s.id === selectedSessionId) : sessions,
-    [sessions, selectedSessionId]
+  const filteredSessions = useMemo(
+    () =>
+      selectedSessionId
+        ? sessions.filter((s) => s.id === selectedSessionId)
+        : sessions,
+    [sessions, selectedSessionId],
   );
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId);
@@ -372,7 +434,6 @@ export default function DonneesScreen() {
   function handleSelectSession(id: string | null) {
     setSelectedSessionId(id);
     setSelectedAire(null);
-
   }
 
   async function handleExport() {
@@ -387,13 +448,14 @@ export default function DonneesScreen() {
         sessions,
         selectedSession?.projectId,
         // Si aucune session sélectionnée → mode multi-onglets
-        selectedSessionId === null
+        selectedSessionId === null,
       );
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erreur lors de l'export.";
+      const message =
+        err instanceof Error ? err.message : "Erreur lors de l'export.";
       Alert.alert("Erreur d'export", message);
     } finally {
       setIsExporting(false);
@@ -411,7 +473,7 @@ export default function DonneesScreen() {
           style: "destructive",
           onPress: () => removeRecord(record.id),
         },
-      ]
+      ],
     );
   }
 
@@ -428,34 +490,62 @@ export default function DonneesScreen() {
             await resetAll();
             setSelectedSessionId(null);
             setSelectedAire(null);
-        
           },
         },
-      ]
+      ],
     );
   }
 
   // Calcul des totaux pour les données filtrées
   const totalRecords = filteredRecords.length;
-  const totalPlants = filteredRecords.reduce((sum, r) => sum + totalCounts(r.counts), 0);
+  const totalPlants = filteredRecords.reduce(
+    (sum, r) => sum + totalCounts(r.counts),
+    0,
+  );
 
   // Label du bouton export
-  const exportLabel = selectedSessionId === null
-    ? "⬇ Télécharger XLSX (toutes sessions)"
-    : "⬇ Télécharger XLSX";
+  const exportLabel = `Exporter Excel · ${filteredRecords.length} relevé${filteredRecords.length > 1 ? "s" : ""}`;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F2EE' }} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: "#F5F2EE" }}
+      edges={["top", "left", "right"]}
+    >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Données</Text>
+        <Text style={styles.headerTitle}>Relevés</Text>
+        <TouchableOpacity
+          onPress={() => setSettings(!settings)}
+          style={{ padding: 12 }}
+        >
+          <Text style={{ color: "#FFFFFF" }}>
+            {settings ? "Fermer les réglages" : "Réglages"}
+          </Text>
+        </TouchableOpacity>
         {totalRecords > 0 && (
           <Text style={styles.headerStats}>
-            {totalRecords} aire{totalRecords !== 1 ? "s" : ""} · {totalPlants} plants
+            {totalRecords} aire{totalRecords !== 1 ? "s" : ""} · {totalPlants}{" "}
+            plants
           </Text>
         )}
       </View>
 
+      {settings && (
+        <View style={{ padding: 16, backgroundColor: "#FFFFFF", gap: 8 }}>
+          <Text style={{ fontWeight: "700", color: "#003c38" }}>
+            Stockage sur cet appareil
+          </Text>
+          <Text>Exportez vos relevés avant de supprimer les données.</Text>
+          <TouchableOpacity
+            onPress={handleResetAll}
+            style={{ paddingVertical: 12 }}
+          >
+            <Text style={{ color: "#A43D32" }}>
+              Supprimer toutes les données…
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {/* Filtres */}
       {sessions.length > 0 && (
         <View style={filterStyles.wrapper}>
@@ -494,34 +584,40 @@ export default function DonneesScreen() {
               record={item}
               sessions={sessions}
               onDelete={() => handleDeleteRecord(item)}
+              onOpen={() => setEditing(item)}
             />
           ))
         )}
-
-        {/* Boutons export et réinitialiser — toujours visibles si données existent */}
-        {records.length > 0 && (
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.exportBtn, isExporting && styles.exportBtnDisabled]}
-              onPress={handleExport}
-              disabled={isExporting}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.exportBtnText}>
-                {isExporting ? "Export en cours…" : exportLabel}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.resetBtn}
-              onPress={handleResetAll}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.resetBtnText}>Réinitialiser tout</Text>
-            </TouchableOpacity>
-          </View>
-        )}
       </ScrollView>
+      {/* Export fixe */}
+      {records.length > 0 && (
+        <View
+          style={{
+            padding: 16,
+            backgroundColor: "#FFFFFF",
+            borderTopWidth: 1,
+            borderColor: "#D3CBBF",
+          }}
+        >
+          <TouchableOpacity
+            style={[styles.exportBtn, isExporting && styles.exportBtnDisabled]}
+            onPress={handleExport}
+            disabled={isExporting || filteredRecords.length === 0}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.exportBtnText}>
+              {isExporting ? "Export en cours…" : exportLabel}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {editing && (
+        <RecordEditor
+          key={editing.id}
+          record={editing}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -59,6 +59,7 @@ export async function deleteSession(sessionId: string): Promise<void> {
   const records = await loadRecords();
   const filteredRecords = records.filter((r) => r.sessionId !== sessionId);
   await AsyncStorage.setItem(RECORDS_KEY, JSON.stringify(filteredRecords));
+  await AsyncStorage.removeItem(`survival_draft_${sessionId}`);
 }
 
 // ---- Enregistrements terrain ----
@@ -75,17 +76,25 @@ export async function loadRecords(): Promise<FieldRecord[]> {
 }
 
 export async function saveRecord(
-  record: Omit<FieldRecord, "id" | "createdAt">
+  record: Omit<FieldRecord, "id" | "createdAt"> & { id?: string }
 ): Promise<FieldRecord> {
   const records = await loadRecords();
   const newRecord: FieldRecord = {
     ...record,
-    id: generateId(),
+    id: record.id ?? generateId(),
     createdAt: new Date().toISOString(),
   };
+  const existing = records.find((r) => r.id === newRecord.id);
+  if (existing) return existing;
   records.push(newRecord);
   await AsyncStorage.setItem(RECORDS_KEY, JSON.stringify(records));
   return newRecord;
+}
+
+export async function updateRecord(record: FieldRecord): Promise<void> {
+  const records = await loadRecords();
+  if (!records.some((r) => r.id === record.id)) throw new Error("Ce relevé n’existe plus.");
+  await AsyncStorage.setItem(RECORDS_KEY, JSON.stringify(records.map((r) => r.id === record.id ? { ...record, sessionId: r.sessionId, createdAt: r.createdAt } : r)));
 }
 
 export async function deleteRecord(recordId: string): Promise<void> {
@@ -95,7 +104,8 @@ export async function deleteRecord(recordId: string): Promise<void> {
 }
 
 export async function clearAllData(): Promise<void> {
-  await AsyncStorage.multiRemove([SESSIONS_KEY, RECORDS_KEY]);
+  const keys = await AsyncStorage.getAllKeys();
+  await AsyncStorage.multiRemove([SESSIONS_KEY, RECORDS_KEY, "survival_active_session", ...keys.filter((key) => key.startsWith("survival_draft_"))]);
 }
 
 export async function loadRecordsForSession(
