@@ -4,6 +4,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { RecordEditor } from "@/components/record-editor";
+import { AreaOverview } from "@/components/area-overview";
 import { Alert } from "@/lib/alert";
 import {
   Platform,
@@ -373,6 +374,7 @@ export default function DonneesScreen() {
   );
   const [editing, setEditing] = useState<FieldRecord | null>(null);
   const [settings, setSettings] = useState(false);
+  const [view, setView] = useState("records");
   useEffect(() => {
     setSelectedSessionId(activeSession?.id ?? null);
     setSelectedAire(null);
@@ -570,24 +572,46 @@ export default function DonneesScreen() {
         style={{ flex: 1 }}
         contentContainerStyle={styles.listContent}
       >
-        {/* Liste des enregistrements */}
-        {filteredRecords.length === 0 ? (
-          <Text style={styles.emptyText}>
-            {records.length === 0
-              ? "Aucune donnée enregistrée.\nCommence un comptage dans l'onglet Comptage."
-              : "Aucune donnée pour ces filtres."}
-          </Text>
-        ) : (
-          filteredRecords.map((item) => (
-            <RecordCard
-              key={item.id}
-              record={item}
-              sessions={sessions}
-              onDelete={() => handleDeleteRecord(item)}
-              onOpen={() => setEditing(item)}
-            />
-          ))
+        <FilterBar
+          label="Vue"
+          selected={view}
+          options={[
+            { value: "records", label: "Relevés" },
+            { value: "areas", label: "Par aire" },
+          ]}
+          onSelect={(value) => setView(value ?? "records")}
+        />
+        {view === "areas" && (
+          <AreaOverview
+            records={filteredRecords}
+            sessions={sessions}
+            sessionId={selectedSessionId}
+            onSelect={(aire, session) => {
+              setSelectedSessionId(session);
+              setSelectedAire(aire);
+              setView("records");
+            }}
+          />
         )}
+        {/* Liste des enregistrements */}
+        {view === "records" &&
+          (filteredRecords.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {records.length === 0
+                ? "Aucune donnée enregistrée.\nCommence un comptage dans l'onglet Comptage."
+                : "Aucune donnée pour ces filtres."}
+            </Text>
+          ) : (
+            filteredRecords.map((item) => (
+              <RecordCard
+                key={item.id}
+                record={item}
+                sessions={sessions}
+                onDelete={() => handleDeleteRecord(item)}
+                onOpen={() => setEditing(item)}
+              />
+            ))
+          ))}
       </ScrollView>
       {/* Export fixe */}
       {records.length > 0 && (

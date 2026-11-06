@@ -9,7 +9,7 @@ const labels = {
     capture: "Capturer ma position",
     replace: "Actualiser la position",
     busy: "Recherche de la position…",
-    none: "Aucune position enregistrée. Placez-vous au point à relever.",
+    none: "Placez-vous sur l’aire de comptage pour capturer son point GPS.",
     accuracy: "Précision annoncée",
     unknown: "Précision inconnue",
     poor: "Précision faible : réessayez dans un endroit dégagé.",
@@ -18,7 +18,7 @@ const labels = {
     error:
       "Position indisponible. Vérifiez la localisation et réessayez à l’extérieur.",
     timeout: "Le GPS n’a pas répondu dans les 20 secondes. Réessayez.",
-    hint: "La position sera conservée avec votre enregistrement.",
+    hint: "Ce point situera l’aire dans le portrait du champ. Il sera conservé avec le relevé.",
     missing:
       "Vous pourrez enregistrer sans GPS si la position est indisponible.",
   },
@@ -61,11 +61,13 @@ export function GpsPosition({
   onChange,
   language = "fr",
   onBusyChange,
+  disabled = false,
 }: {
   value?: GeoPosition | null;
   onChange: (position: GeoPosition) => void;
   language?: keyof typeof labels;
   onBusyChange?: (busy: boolean) => void;
+  disabled?: boolean;
 }) {
   const t = labels[language];
   const [busy, setBusy] = useState(false);
@@ -79,7 +81,7 @@ export function GpsPosition({
     };
   }, []);
   async function capture() {
-    if (running.current) return;
+    if (running.current || disabled) return;
     running.current = true;
     setBusy(true);
     setError("");
@@ -150,7 +152,7 @@ export function GpsPosition({
       )}
       <TouchableOpacity
         accessibilityRole="button"
-        disabled={busy}
+        disabled={busy || disabled}
         onPress={capture}
         style={{
           padding: 12,

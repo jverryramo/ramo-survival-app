@@ -12,6 +12,7 @@ import { Alert } from "@/lib/alert";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FieldRecord, STATE_KEYS, totalCounts } from "@/lib/types";
 import { useSession } from "@/lib/session-context";
+import { GpsPosition } from "@/components/gps-position";
 
 export function RecordEditor({
   record,
@@ -23,6 +24,7 @@ export function RecordEditor({
   const { editRecord, records, sessions } = useSession();
   const [value, setValue] = useState(record);
   const [busy, setBusy] = useState(false);
+  const [gpsBusy, setGpsBusy] = useState(false);
   const session = sessions.find((s) => s.id === record.sessionId);
   const input = {
     borderWidth: 1,
@@ -34,7 +36,7 @@ export function RecordEditor({
     fontSize: 17,
   };
   function close() {
-    if (busy) return;
+    if (busy || gpsBusy) return;
     if (JSON.stringify(value) === JSON.stringify(record)) return onClose();
     Alert.alert(
       "Quitter sans enregistrer ?",
@@ -46,7 +48,7 @@ export function RecordEditor({
     );
   }
   async function save() {
-    if (busy) return;
+    if (busy || gpsBusy) return;
     if (
       !/^\d+$/.test(value.aire) ||
       Number(value.aire) < 1 ||
@@ -130,7 +132,7 @@ export function RecordEditor({
               <Text>{label}</Text>
               <TextInput
                 accessibilityLabel={label}
-                editable={!busy}
+                editable={!busy && !gpsBusy}
                 style={input}
                 keyboardType={key === "length_m" ? "decimal-pad" : "number-pad"}
                 value={value[key]}
@@ -158,7 +160,7 @@ export function RecordEditor({
               <Text style={{ flex: 1 }}>{state.label}</Text>
               <TextInput
                 accessibilityLabel={state.label}
-                editable={!busy}
+                editable={!busy && !gpsBusy}
                 style={[input, { width: 100, textAlign: "center" }]}
                 keyboardType="number-pad"
                 value={String(value.counts[state.key])}
@@ -175,23 +177,29 @@ export function RecordEditor({
           <Text>Commentaire</Text>
           <TextInput
             accessibilityLabel="Commentaire"
-            editable={!busy}
+            editable={!busy && !gpsBusy}
             style={[input, { minHeight: 80 }]}
             multiline
             value={value.comment}
             onChangeText={(comment) => setValue((v) => ({ ...v, comment }))}
           />
+          <GpsPosition
+            disabled={busy}
+            value={value.gps}
+            onChange={(gps) => setValue((v) => ({ ...v, gps }))}
+            onBusyChange={setGpsBusy}
+          />
           <Text style={{ color: "#6B6560" }}>
-            {record.gps
-              ? `Position capturée · ${record.gps.accuracyMeters === null ? "précision inconnue" : `± ${Math.round(record.gps.accuracyMeters)} m`}`
+            {value.gps
+              ? `Position capturée · ${value.gps.accuracyMeters === null ? "précision inconnue" : `± ${Math.round(value.gps.accuracyMeters)} m`}`
               : "Sans position GPS"}
           </Text>
-          {record.gps && (
+          {value.gps && (
             <TouchableOpacity
               style={{ paddingVertical: 14 }}
               onPress={() => {
                 void Linking.openURL(
-                  `https://www.google.com/maps/search/?api=1&query=${record.gps!.latitude},${record.gps!.longitude}`,
+                  `https://www.google.com/maps/search/?api=1&query=${value.gps!.latitude},${value.gps!.longitude}`,
                 ).catch(() =>
                   Alert.alert(
                     "Carte indisponible",
@@ -208,14 +216,14 @@ export function RecordEditor({
         </ScrollView>
         <View style={{ padding: 16, flexDirection: "row", gap: 12 }}>
           <TouchableOpacity
-            disabled={busy}
+            disabled={busy || gpsBusy}
             style={{ padding: 16 }}
             onPress={close}
           >
             <Text>Fermer</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            disabled={busy}
+            disabled={busy || gpsBusy}
             style={{
               flex: 1,
               padding: 16,

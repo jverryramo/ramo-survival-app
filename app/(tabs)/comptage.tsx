@@ -267,7 +267,9 @@ function CountingSession({ sessionId }: { sessionId: string }) {
   function change(patch: Partial<CountingDraft>) {
     setDraft((d) => ({ ...d, ...patch }));
   }
-  const setAire = (aire: string) => change({ aire });
+  const setAire = (aire: string) => {
+    if (!gpsBusy) change({ aire, gps: undefined });
+  };
   const setLengthM = (lengthM: string) => change({ lengthM });
   const setVariety = (variety: string) => change({ variety });
   const setComment = (comment: string) => change({ comment });
@@ -738,7 +740,7 @@ function CountingSession({ sessionId }: { sessionId: string }) {
 
         {/* Bouton commencer */}
         <GpsPosition
-          key={activeSession?.id ?? "none"}
+          key={`${activeSession?.id ?? "none"}-${aire}`}
           value={gps}
           onChange={setGps}
           onBusyChange={setGpsBusy}
